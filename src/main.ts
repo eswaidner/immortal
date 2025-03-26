@@ -4,10 +4,16 @@ import Input from "./input";
 import initWorld from "./world";
 import initPlayer from "./player";
 import initCamera from "./camera";
+import State from "./state";
+
+export let state: State;
+export let app: Application;
+export let input: Input;
 
 async function init() {
-  const app = new Application();
-  const input = new Input();
+  app = new Application();
+  state = new State();
+  input = new Input();
 
   const appHolder = document.querySelector("#app")!;
 

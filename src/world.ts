@@ -39,7 +39,7 @@ export default async function initWorld(app: Application) {
   };
 
   world.anchor = 0.5;
-  world.scale = 2048;
+  world.scale = 256;
 
   world.filters = [
     new Filter({
