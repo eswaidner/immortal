@@ -21,9 +21,14 @@ vec3 splat(vec3 weights, vec3 c0, vec3 c1, vec3 c2) {
     return mix(mix(c0.xyz, c1.xyz, weights.y), c2.xyz, weights.z);
 }
 
-vec3 splatHeight(vec3 weights, vec3 heights, vec3 c0, vec3 c1, vec3 c2) {
-    weights = weights * heights;
-    return mix(mix(c0.xyz, c1.xyz, weights.y), c2.xyz, weights.z);
+vec3 splatStep(vec3 weights, vec3 heights, vec3 c0, vec3 c1, vec3 c2) {
+    //TODO smoothstep for height application
+    float maxXY = max(weights.x, weights.y);
+    float maxXYZ = step(maxXY + 0.05, weights.z);
+
+    maxXY = step(0.5, maxXY);
+
+    return mix(mix(c0.xyz, c1.xyz, 1.0 - maxXY), c2.xyz, maxXYZ);
 }
 
 // const float tileSize = 2.0;
@@ -34,7 +39,10 @@ const float cloudSize = 7.0;
 const vec2 cloudDir = vec2(-0.00001, 0.000005);
 const float cloudShadow = 0.1;
 
-const float noiseScale = 100.0;
+const float noiseScale = 120.0;
+const float waterNoiseScale = 80.0;
+const float waterNoiseBias = 0.2;
+const vec2 noiseDir = vec2(-0.0001, 0.0);
 
 void main(void) {
     vec2 offsetWorldPos = -worldPos + (screenSize * vTextureCoord) - screenSize * 0.5;
@@ -50,6 +58,7 @@ void main(void) {
     vec4 misc = texture2D(miscMap, worldCoord);
 
     vec4 perlin = texture2D(perlinNoise, worldCoord * noiseScale);
+    vec4 perlin_offset = texture2D(perlinNoise, worldCoord * waterNoiseScale + noiseDir * time);
 
     vec2 cloudOffset = cloudDir * time;
     vec4 clouds = texture2D(miscMap, (worldCoord + cloudOffset) * cloudSize);
@@ -66,17 +75,17 @@ void main(void) {
     vec3 surf2Col_b2 = vec3(0.196, 0.451, 0.161);
     vec3 surf3Col_b2 = vec3(0.42, 0.612, 0.349);
 
-    vec3 surface1Color = splat(biome.xyz, surf1Col_b0, surf1Col_b1, surf1Col_b2);
-    vec3 surface2Color = splat(biome.xyz, surf2Col_b0, surf2Col_b1, surf2Col_b2);
-    vec3 surface3Color = splat(biome.xyz, surf3Col_b0, surf3Col_b1, surf3Col_b2);
+    vec3 surface1Color = splatStep(biome.xyz, vec3(0.0), surf1Col_b0, surf1Col_b1, surf1Col_b2);
+    vec3 surface2Color = splatStep(biome.xyz, vec3(0.0), surf2Col_b0, surf2Col_b1, surf2Col_b2);
+    vec3 surface3Color = splatStep(biome.xyz, vec3(0.0), surf3Col_b0, surf3Col_b1, surf3Col_b2);
 
     //TODO surface texture samples
 
-    vec3 surfColor = splatHeight(surface.xyz, perlin.xyz, surface1Color, surface2Color, surface3Color);
+    vec3 surfColor = splatStep(surface.xyz, perlin.xyz, surface1Color, surface2Color, surface3Color);
 
-    vec3 waterColor = mix(vec3(0.086, 0.235, 0.4), vec3(0.122, 0.314, 0.529), (1.0 - water.z));
+    vec3 waterColor = mix(vec3(0.086, 0.235, 0.4) * 0.7, vec3(0.122, 0.314, 0.529), (1.0 - water.z + perlin_offset.x * waterNoiseBias));
 
-    surfColor = mix(surfColor, waterColor, water.z * 1.5);
+    surfColor = mix(surfColor, waterColor, 0.8 * step(0.1, water.z - perlin_offset.x * waterNoiseBias));
 
     // CLOUDS
     // surfColor *= 1.0 - (clouds.x * cloudShadow);

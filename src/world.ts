@@ -11,7 +11,7 @@ export default async function initWorld() {
   const miscMapPromise = Assets.load("/world/misc_map.webp");
   const perlinNoisePromise = Assets.load("/world/perlin_noise.png");
 
-  //TODO load surface textures
+  //TODO load surface atlas
 
   const biomeMap = (await biomeMapPromise) as Texture;
   const surfaceMap = (await surfaceMapPromise) as Texture;
