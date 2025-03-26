@@ -2,7 +2,7 @@
 .SILENT:
 
 up:
-	npm run dev
+	npm run dev -- --host
 
 build:
 	npm run build

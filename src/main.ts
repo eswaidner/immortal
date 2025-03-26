@@ -1,7 +1,8 @@
 import "./style.css";
-import { Application, Graphics, Text } from "pixi.js";
+import { Application, Assets, Sprite, Text } from "pixi.js";
 import Input from "./input";
 import { Vector } from "./math";
+import initWorld from "./world";
 
 async function init() {
   const app = new Application();
@@ -11,32 +12,38 @@ async function init() {
 
   await app.init({
     resizeTo: appHolder as HTMLElement,
-    backgroundColor: "#101010",
+    backgroundColor: "#304025",
     antialias: true,
+    roundPixels: false,
+    autoDensity: true,
+    resolution: 1 * window.devicePixelRatio,
   });
+
+  app.ticker.maxFPS = 0;
 
   appHolder.appendChild(app.canvas);
 
-  const rect = new Graphics();
-  rect.rect(0, 0, 50, 50).fill({ color: "#ffffff" });
-  rect.pivot = 25;
-  rect.position = { x: 100, y: 100 };
-
-  app.stage.addChild(rect);
-
   const txt = new Text({
-    text: "Immortal",
+    text: `Immortal`,
     style: { fill: "#ffffff", fontSize: 18 },
-    resolution: 2,
   });
 
   app.stage.addChild(txt);
 
+  initWorld(app);
+
+  const scale = 0.45;
+
+  const dudeTex = await Assets.load("/dude_1.png");
+  const dude = new Sprite(dudeTex);
+  dude.anchor = 0.5;
+  dude.scale = scale;
+  dude.position = { x: app.screen.width * 0.5, y: app.screen.height * 0.5 };
+  app.stage.addChild(dude);
+
   const speed = 10;
 
   app.ticker.add((tk) => {
-    rect.rotation += 0.05 * tk.deltaTime;
-
     let dx = 0;
     if (input.isKeyDown("d")) dx += 1;
     if (input.isKeyDown("a")) dx -= 1;
@@ -47,8 +54,16 @@ async function init() {
 
     const dir = new Vector(dx, dy).normalize();
 
-    rect.x += dir.x * speed * tk.deltaTime;
-    rect.y += dir.y * speed * tk.deltaTime;
+    if (dir.x !== 0) {
+      dude.scale.x = dir.x > 0 ? scale : -scale;
+    }
+
+    dude.x += dir.x * speed * tk.deltaTime;
+    dude.y += dir.y * speed * tk.deltaTime;
+
+    txt.text = `Immortal
+Resolution: ${app.canvas.width}x${app.canvas.height}
+FPS: ${app.ticker.FPS.toFixed(0)}`;
   });
 }
 
