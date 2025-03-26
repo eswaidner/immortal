@@ -2,6 +2,7 @@ import { Assets, Container, Sprite, Ticker } from "pixi.js";
 import { Vector } from "./math";
 import { g } from "./globals";
 import { Entity } from "./state";
+import { spawnUnits } from "./npcs";
 
 export default async function initPlayer() {
   const scale = 0.45;
@@ -25,6 +26,8 @@ export default async function initPlayer() {
   g.app.ticker.add((tk) => {
     move(tk, playerEnt);
   });
+
+  spawnUnits(playerEnt, 100);
 }
 
 function move(tk: Ticker, playerEnt: Entity) {

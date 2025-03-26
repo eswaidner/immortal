@@ -1,5 +1,5 @@
 import "./style.css";
-import { Application, Container, Text, Ticker } from "pixi.js";
+import { Application, Container, Text } from "pixi.js";
 import Input from "./input";
 import initWorld from "./world";
 import initPlayer from "./player";
@@ -7,6 +7,7 @@ import initCamera from "./camera";
 import State from "./state";
 import { g, initGlobals } from "./globals";
 import { Vector } from "./math";
+import { initNpcs } from "./npcs";
 
 async function init() {
   initGlobals({
@@ -41,6 +42,7 @@ async function init() {
   initWorld();
   initCamera();
   initPlayer();
+  initNpcs();
 
   const txt = new Text({
     text: `Immortal`,

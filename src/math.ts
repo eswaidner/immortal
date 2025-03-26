@@ -8,21 +8,15 @@ export class Vector {
   }
 
   add(v: Vector): Vector {
-    this.x += v.x;
-    this.y += v.y;
-    return this;
+    return new Vector(this.x + v.x, this.y + v.y);
   }
 
   sub(v: Vector): Vector {
-    this.x -= v.x;
-    this.y -= v.y;
-    return this;
+    return new Vector(this.x - v.x, this.y - v.y);
   }
 
   scale(s: number): Vector {
-    this.x *= s;
-    this.y *= s;
-    return this;
+    return new Vector(this.x * s, this.y * s);
   }
 
   squaredMagnitude(): number {
@@ -43,8 +37,39 @@ export class Vector {
     return this;
   }
 
+  normalized(): Vector {
+    if (this.x === 0 && this.y === 0) return new Vector();
+    const mag = this.magnitude();
+    return new Vector(this.x / mag, (this.y /= mag));
+  }
+
+  distance(v: Vector): number {
+    return v.sub(this).magnitude();
+  }
+
   lerp(to: Vector, t: number): Vector {
     // a + (b - a) * t
     return this.add(to.sub(this).scale(t));
   }
+
+  randomDirection(): Vector {
+    const vec = new Vector();
+    vec.x = remap(Math.random(), 0, 1, -1, 1);
+    vec.y = remap(Math.random(), 0, 1, -1, 1);
+    return vec.normalize();
+  }
+
+  randomScale(min: number, max: number): Vector {
+    return this.scale(remap(Math.random(), 0, 1, min, max));
+  }
+}
+
+export function remap(
+  x: number,
+  a0: number,
+  a1: number,
+  b0: number,
+  b1: number,
+) {
+  return b0 + ((b1 - b0) * (x - a0)) / (a1 - a0);
 }
