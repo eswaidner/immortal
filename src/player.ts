@@ -28,7 +28,7 @@ export default async function initPlayer() {
 }
 
 function move(tk: Ticker, playerEnt: Entity) {
-  const speed = 10;
+  const speed = 9;
 
   let dx = 0;
   if (g.input.isKeyDown("d")) dx += 1;

@@ -9,13 +9,18 @@ export default async function initWorld() {
   const surfaceMapPromise = Assets.load("/world/surface_map.webp");
   const waterMapPromise = Assets.load("/world/water_map.webp");
   const miscMapPromise = Assets.load("/world/misc_map.webp");
+  const perlinNoisePromise = Assets.load("/world/perlin_noise.png");
 
   //TODO load surface textures
 
   const biomeMap = (await biomeMapPromise) as Texture;
-  const surfaceMap = await surfaceMapPromise;
-  const waterMap = await waterMapPromise;
-  const miscMap = await miscMapPromise;
+  const surfaceMap = (await surfaceMapPromise) as Texture;
+  const waterMap = (await waterMapPromise) as Texture;
+  const miscMap = (await miscMapPromise) as Texture;
+  const perlinNoise = (await perlinNoisePromise) as Texture;
+
+  miscMap.source.addressMode = "repeat";
+  perlinNoise.source.addressMode = "repeat";
 
   // get pixel data for biomes
   // const biomeMapSprite = Sprite.from(biomeMap);
@@ -31,19 +36,47 @@ export default async function initWorld() {
   };
 
   world.anchor = 0.5;
-  world.scale = 256;
+  world.width = g.app.screen.width;
+  world.height = g.app.screen.height;
 
-  world.filters = [
-    new Filter({
-      glProgram: new GlProgram({ fragment, vertex }),
-      resources: {
-        biomeMap: biomeMap.source,
-        surfaceMap: surfaceMap.source,
-        waterMap: waterMap.source,
-        miscMap: miscMap.source,
+  const worldPos = g.origin.position;
+
+  const worldFilter = new Filter({
+    glProgram: new GlProgram({ fragment, vertex }),
+    resources: {
+      metadata: {
+        worldPos: {
+          value: { x: worldPos.x, y: worldPos.y },
+          type: "vec2<f32>",
+        },
+        screenSize: {
+          value: { x: g.app.screen.width, y: g.app.screen.height },
+          type: "vec2<f32>",
+        },
+        time: {
+          value: 0,
+          type: "f32",
+        },
       },
-    }),
-  ];
+      biomeMap: biomeMap.source,
+      surfaceMap: surfaceMap.source,
+      waterMap: waterMap.source,
+      miscMap: miscMap.source,
+      perlinNoise: perlinNoise.source,
+    },
+  });
 
-  g.origin.addChildAt(world, 0);
+  world.filters = [worldFilter];
+
+  g.app.stage.addChildAt(world, 0);
+
+  g.app.ticker.add((tk) => {
+    const wpos = g.origin.position;
+    worldFilter.resources.metadata.uniforms.worldPos = wpos;
+    worldFilter.resources.metadata.uniforms.screenSize = {
+      x: g.app.screen.width,
+      y: g.app.screen.height,
+    };
+    worldFilter.resources.metadata.uniforms.time = tk.lastTime;
+  });
 }

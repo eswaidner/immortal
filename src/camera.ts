@@ -23,8 +23,11 @@ export default function initCamera() {
       targetPos.y - g.app.screen.height * 0.5,
     );
 
-    const lerped = currentPos.lerp(pos, 0.1);
+    const sqDist = new Vector(pos.x, pos.y).sub(currentPos).squaredMagnitude();
 
-    cam.set("position", lerped);
+    if (sqDist > 5) {
+      const lerped = currentPos.lerp(pos, 0.1);
+      cam.set("position", lerped);
+    }
   });
 }
