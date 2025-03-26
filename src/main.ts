@@ -4,7 +4,7 @@ import Input from "./input";
 import initWorld from "./world";
 import initPlayer from "./player";
 import initCamera from "./camera";
-import State, { Database } from "./state";
+import State from "./state";
 import { g, initGlobals } from "./globals";
 import { Vector } from "./math";
 
@@ -15,12 +15,9 @@ async function init() {
     input: new Input(),
   });
 
-  g.state.addDatabase(new Database("main"));
-  const db = g.state.getDatabase("main");
-
-  db.addAttribute<Vector>("direction");
-  db.addAttribute<{}>("face-direction");
-  db.addAttribute<[Container, number]>("container");
+  g.state.addAttribute<Vector>("direction");
+  g.state.addAttribute<{}>("face-direction");
+  g.state.addAttribute<[Container, number]>("container");
 
   const appHolder = document.querySelector("#app")!;
 
@@ -58,8 +55,9 @@ FPS: ${g.app.ticker.FPS.toFixed(0)}`;
 }
 
 function faceDirection() {
-  const db = g.state.getDatabase("main");
-  const q = db.query({ include: ["face-direction", "direction", "container"] });
+  const q = g.state.query({
+    include: ["face-direction", "direction", "container"],
+  });
 
   for (let ent of q.entities) {
     const dir = ent.attributes["direction"] as Vector;

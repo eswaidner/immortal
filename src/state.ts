@@ -1,27 +1,6 @@
 export default class State {
-  dbs: Record<string, Database> = {};
-
-  addDatabase(db: Database): State {
-    this.dbs[db.name] = db;
-    return this;
-  }
-
-  getDatabase(name: string): Database {
-    const db = this.dbs[name];
-    if (!db) throw new Error(`undefined world '${name}'`);
-
-    return db;
-  }
-}
-
-export class Database {
-  name: string;
   entities: (number | undefined)[] = [];
   attributes: Record<string, object> = {};
-
-  constructor(name: string) {
-    this.name = name;
-  }
 
   addEntity(): Entity {
     //TODO progressively recycle ids
@@ -129,9 +108,9 @@ interface QueryResult {
 
 export class Entity {
   id: number;
-  world: Database;
+  world: State;
 
-  constructor(id: number, world: Database) {
+  constructor(id: number, world: State) {
     this.id = id;
     this.world = world;
   }

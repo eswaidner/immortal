@@ -14,8 +14,7 @@ export default async function initPlayer() {
   dude.position = { x: g.app.screen.width * 0.5, y: g.app.screen.height * 0.5 };
   g.app.stage.addChild(dude);
 
-  const db = g.state.getDatabase("main");
-  const playerEnt = db.addEntity();
+  const playerEnt = g.state.addEntity();
   playerEnt.set("direction", new Vector());
   playerEnt.set("face-direction", {});
   playerEnt.set("container", [dude as Container, scale]);
