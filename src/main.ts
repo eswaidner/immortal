@@ -1,8 +1,9 @@
 import "./style.css";
-import { Application, Assets, Sprite, Text } from "pixi.js";
+import { Application, Text } from "pixi.js";
 import Input from "./input";
-import { Vector } from "./math";
 import initWorld from "./world";
+import initPlayer from "./player";
+import initCamera from "./camera";
 
 async function init() {
   const app = new Application();
@@ -31,36 +32,10 @@ async function init() {
   app.stage.addChild(txt);
 
   initWorld(app);
-
-  const scale = 0.45;
-
-  const dudeTex = await Assets.load("/dude_1.png");
-  const dude = new Sprite(dudeTex);
-  dude.anchor = 0.5;
-  dude.scale = scale;
-  dude.position = { x: app.screen.width * 0.5, y: app.screen.height * 0.5 };
-  app.stage.addChild(dude);
-
-  const speed = 10;
+  initPlayer(app, input);
+  initCamera(app);
 
   app.ticker.add((tk) => {
-    let dx = 0;
-    if (input.isKeyDown("d")) dx += 1;
-    if (input.isKeyDown("a")) dx -= 1;
-
-    let dy = 0;
-    if (input.isKeyDown("s")) dy += 1;
-    if (input.isKeyDown("w")) dy -= 1;
-
-    const dir = new Vector(dx, dy).normalize();
-
-    if (dir.x !== 0) {
-      dude.scale.x = dir.x > 0 ? scale : -scale;
-    }
-
-    dude.x += dir.x * speed * tk.deltaTime;
-    dude.y += dir.y * speed * tk.deltaTime;
-
     txt.text = `Immortal
 Resolution: ${app.canvas.width}x${app.canvas.height}
 FPS: ${app.ticker.FPS.toFixed(0)}`;

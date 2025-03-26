@@ -32,15 +32,14 @@ export default async function initWorld(app: Application) {
   //   target: biomeMapSprite,
   // });
 
-  const world = new Container();
+  const world = Sprite.from(Texture.WHITE);
   world.position = {
     x: app.screen.width * 0.5,
     y: app.screen.height * 0.5,
   };
 
-  world.scale = 512;
-
-  world.addChild(Sprite.from(Texture.WHITE));
+  world.anchor = 0.5;
+  world.scale = 2048;
 
   world.filters = [
     new Filter({
