@@ -6,8 +6,7 @@ uniform vec4 uOutputFrame;
 uniform vec4 uOutputTexture;
 
 vec4 filterVertexPosition(void) {
-    // vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
-    vec2 position = aPosition * 2048.0;
+    vec2 position = aPosition * uOutputFrame.zw + uOutputFrame.xy;
 
     position.x = position.x * (2.0 / uOutputTexture.x) - 1.0;
     position.y = position.y * (2.0 * uOutputTexture.z / uOutputTexture.y) - uOutputTexture.z;
