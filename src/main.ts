@@ -4,20 +4,22 @@ import Input from "./input";
 import initWorld from "./world";
 import initPlayer from "./player";
 import initCamera from "./camera";
-import State from "./state";
-
-export let state: State;
-export let app: Application;
-export let input: Input;
+import State, { Database } from "./state";
+import { g, initGlobals } from "./globals";
 
 async function init() {
-  app = new Application();
-  state = new State();
-  input = new Input();
+  initGlobals({
+    app: new Application(),
+    state: new State(),
+    input: new Input(),
+  });
+
+  g.state.addDatabase(new Database("main"));
+  const db = g.state.getDatabase("main");
 
   const appHolder = document.querySelector("#app")!;
 
-  await app.init({
+  await g.app.init({
     resizeTo: appHolder as HTMLElement,
     backgroundColor: "#304025",
     antialias: true,
@@ -26,25 +28,25 @@ async function init() {
     resolution: 1 * window.devicePixelRatio,
   });
 
-  app.ticker.maxFPS = 0;
+  g.app.ticker.maxFPS = 0;
 
-  appHolder.appendChild(app.canvas);
+  appHolder.appendChild(g.app.canvas);
+
+  initWorld();
+  initPlayer();
+  initCamera();
 
   const txt = new Text({
     text: `Immortal`,
     style: { fill: "#ffffff", fontSize: 18 },
   });
 
-  app.stage.addChild(txt);
+  g.app.stage.addChild(txt);
 
-  initWorld(app);
-  initPlayer(app, input);
-  initCamera(app);
-
-  app.ticker.add((tk) => {
+  g.app.ticker.add((tk) => {
     txt.text = `Immortal
-Resolution: ${app.canvas.width}x${app.canvas.height}
-FPS: ${app.ticker.FPS.toFixed(0)}`;
+Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
+FPS: ${g.app.ticker.FPS.toFixed(0)}`;
   });
 }
 

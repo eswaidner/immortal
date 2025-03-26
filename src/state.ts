@@ -1,16 +1,16 @@
 export default class State {
-  worlds: Record<string, Database> = {};
+  dbs: Record<string, Database> = {};
 
-  addDatabase(w: Database): State {
-    this.worlds[w.name] = w;
+  addDatabase(db: Database): State {
+    this.dbs[db.name] = db;
     return this;
   }
 
   getDatabase(name: string): Database {
-    const w = this.worlds[name];
-    if (!w) throw new Error(`undefined world '${name}'`);
+    const db = this.dbs[name];
+    if (!db) throw new Error(`undefined world '${name}'`);
 
-    return w;
+    return db;
   }
 }
 
@@ -34,7 +34,7 @@ export class Database {
     this.entities[id] = undefined;
 
     for (const c of Object.values(this.attributes)) {
-      delete (c as Attribute<any>).instances[id];
+      (c as Attribute<any>).instances.delete(id);
     }
   }
 
@@ -55,6 +55,76 @@ export class Database {
 
     return attr as Attribute<T>;
   }
+
+  query(q: Query): QueryResult {
+    const base = this.getAttribute(q.include[0]);
+    const result: QueryResult = { entities: [] };
+
+    // check all instances of base attribute for matches
+    for (let [entId, baseVal] of base.instances.entries()) {
+      const ent: EntityView = {
+        id: entId,
+        attributes: { [base.name]: baseVal },
+      };
+
+      let match = true;
+
+      // reject entity if a required attribute is missing
+      for (let j = 1; j < q.include.length; j += 1) {
+        const attr = this.getAttribute(q.include[j]);
+
+        const val = attr.instances.get(entId);
+        if (val === undefined) {
+          match = false;
+          break;
+        }
+
+        ent.attributes[attr.name] = val;
+      }
+
+      // reject entity if an excluded attribute is set
+      if (match && q.exclude) {
+        for (let j = 0; j < q.exclude.length; j += 1) {
+          const attr = this.getAttribute(q.exclude[j]);
+
+          if (attr.instances.get(entId) !== undefined) {
+            match = false;
+            break;
+          }
+        }
+      }
+
+      // check for optional attributes
+      if (match && q.optional) {
+        for (let j = 0; j < q.optional.length; j += 1) {
+          const attr = this.getAttribute(q.optional[j]);
+
+          const val = attr.instances.get(entId);
+          ent.attributes[attr.name] = val;
+        }
+      }
+
+      // add values to query result
+      if (match) result.entities.push(ent);
+    }
+
+    return result;
+  }
+}
+
+interface Query {
+  include: string[];
+  exclude?: string[];
+  optional?: string[];
+}
+
+interface EntityView {
+  id: number;
+  attributes: Record<string, any>;
+}
+
+interface QueryResult {
+  entities: EntityView[];
 }
 
 export class Entity {
@@ -68,25 +138,25 @@ export class Entity {
 
   get<T>(name: string): T | undefined {
     const attr = this.world.getAttribute<T>(name);
-    return attr.instances[this.id];
+    return attr.instances.get(this.id);
   }
 
   set<T>(name: string, value: T) {
     const attr = this.world.getAttribute<T>(name);
-    attr.instances[this.id] = value;
+    attr.instances.set(this.id, value);
     attr.change();
   }
 
   delete(name: string) {
     const attr = this.world.getAttribute(name);
-    delete attr.instances[this.id];
+    attr.instances.delete(this.id);
     attr.change();
   }
 }
 
 export class Attribute<T> {
   name: string;
-  instances: Record<number, T> = {};
+  instances: Map<number, T> = new Map();
 
   // hooks
   changeEffects: Map<object, Effect<T>> = new Map();

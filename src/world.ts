@@ -1,17 +1,9 @@
-import {
-  Application,
-  Assets,
-  Container,
-  DisplacementFilter,
-  Filter,
-  GlProgram,
-  Sprite,
-  Texture,
-} from "pixi.js";
+import { Assets, Filter, GlProgram, Sprite, Texture } from "pixi.js";
 import vertex from "./shaders/world.vert?raw";
 import fragment from "./shaders/world.frag?raw";
+import { g } from "./globals";
 
-export default async function initWorld(app: Application) {
+export default async function initWorld() {
   //TODO use manifest and bundles instead
   const biomeMapPromise = Assets.load("/world/biome_map.webp");
   const surfaceMapPromise = Assets.load("/world/surface_map.webp");
@@ -34,8 +26,8 @@ export default async function initWorld(app: Application) {
 
   const world = Sprite.from(Texture.WHITE);
   world.position = {
-    x: app.screen.width * 0.5,
-    y: app.screen.height * 0.5,
+    x: g.app.screen.width * 0.5,
+    y: g.app.screen.height * 0.5,
   };
 
   world.anchor = 0.5;
@@ -53,5 +45,5 @@ export default async function initWorld(app: Application) {
     }),
   ];
 
-  app.stage.addChildAt(world, 0);
+  g.app.stage.addChildAt(world, 0);
 }
