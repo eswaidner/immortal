@@ -45,5 +45,5 @@ export default async function initWorld() {
     }),
   ];
 
-  g.app.stage.addChildAt(world, 0);
+  g.world.addChildAt(world, 0);
 }

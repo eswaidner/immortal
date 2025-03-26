@@ -1,5 +1,5 @@
 import "./style.css";
-import { Application, Container, Text } from "pixi.js";
+import { Application, Container, Text, Ticker } from "pixi.js";
 import Input from "./input";
 import initWorld from "./world";
 import initPlayer from "./player";
@@ -11,13 +11,17 @@ import { Vector } from "./math";
 async function init() {
   initGlobals({
     app: new Application(),
+    world: new Container(),
     state: new State(),
     input: new Input(),
   });
 
+  g.app.stage.addChild(g.world);
+
   g.state.addAttribute<Vector>("direction");
   g.state.addAttribute<{}>("face-direction");
   g.state.addAttribute<[Container, number]>("container");
+  g.state.addAttribute<[Container, number]>("world-positioned");
 
   const appHolder = document.querySelector("#app")!;
 
@@ -47,6 +51,7 @@ async function init() {
 
   g.app.ticker.add((tk) => {
     faceDirection();
+    updateWorldPosition();
 
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
@@ -67,6 +72,14 @@ function faceDirection() {
       c.scale.x = dir.x > 0 ? scale : -scale;
     }
   }
+}
+
+function updateWorldPosition() {
+  const camPos = g.state.query({ include: ["camera", "position"] }).entities[0]
+    .attributes["position"] as Vector;
+
+  g.world.x = -camPos.x;
+  g.world.y = -camPos.y;
 }
 
 init();

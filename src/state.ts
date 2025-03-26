@@ -42,7 +42,7 @@ export default class State {
     // check all instances of base attribute for matches
     for (let [entId, baseVal] of base.instances.entries()) {
       const ent: EntityView = {
-        id: entId,
+        entity: this.getEntity(entId)!,
         attributes: { [base.name]: baseVal },
       };
 
@@ -98,7 +98,7 @@ interface Query {
 }
 
 interface EntityView {
-  id: number;
+  entity: Entity;
   attributes: Record<string, any>;
 }
 
@@ -108,26 +108,26 @@ interface QueryResult {
 
 export class Entity {
   id: number;
-  world: State;
+  state: State;
 
   constructor(id: number, world: State) {
     this.id = id;
-    this.world = world;
+    this.state = world;
   }
 
   get<T>(name: string): T | undefined {
-    const attr = this.world.getAttribute<T>(name);
+    const attr = this.state.getAttribute<T>(name);
     return attr.instances.get(this.id);
   }
 
   set<T>(name: string, value: T) {
-    const attr = this.world.getAttribute<T>(name);
+    const attr = this.state.getAttribute<T>(name);
     attr.instances.set(this.id, value);
     attr.change();
   }
 
   delete(name: string) {
-    const attr = this.world.getAttribute(name);
+    const attr = this.state.getAttribute(name);
     attr.instances.delete(this.id);
     attr.change();
   }
