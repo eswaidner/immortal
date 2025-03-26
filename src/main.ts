@@ -11,12 +11,12 @@ import { Vector } from "./math";
 async function init() {
   initGlobals({
     app: new Application(),
-    world: new Container(),
+    origin: new Container(),
     state: new State(),
     input: new Input(),
   });
 
-  g.app.stage.addChild(g.world);
+  g.app.stage.addChild(g.origin);
 
   g.state.addAttribute<Vector>("direction");
   g.state.addAttribute<{}>("face-direction");
@@ -39,8 +39,8 @@ async function init() {
   appHolder.appendChild(g.app.canvas);
 
   initWorld();
-  initPlayer();
   initCamera();
+  initPlayer();
 
   const txt = new Text({
     text: `Immortal`,
@@ -50,8 +50,9 @@ async function init() {
   g.app.stage.addChild(txt);
 
   g.app.ticker.add((tk) => {
+    updateWorldOriginPosition();
     faceDirection();
-    updateWorldPosition();
+    updatePositions();
 
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
@@ -74,12 +75,26 @@ function faceDirection() {
   }
 }
 
-function updateWorldPosition() {
+function updateWorldOriginPosition() {
   const camPos = g.state.query({ include: ["camera", "position"] }).entities[0]
     .attributes["position"] as Vector;
 
-  g.world.x = -camPos.x;
-  g.world.y = -camPos.y;
+  g.origin.x = -camPos.x;
+  g.origin.y = -camPos.y;
+}
+
+function updatePositions() {
+  const q = g.state.query({ include: ["position", "container"] });
+
+  for (let i = 0; i < q.entities.length; i++) {
+    const e = q.entities[i];
+
+    const pos = e.attributes["position"] as Vector;
+    const [c, _] = e.attributes["container"] as [Container, number];
+
+    c.x = pos.x;
+    c.y = pos.y;
+  }
 }
 
 init();

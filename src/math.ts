@@ -7,6 +7,24 @@ export class Vector {
     this.y = y || 0;
   }
 
+  add(v: Vector): Vector {
+    this.x += v.x;
+    this.y += v.y;
+    return this;
+  }
+
+  sub(v: Vector): Vector {
+    this.x -= v.x;
+    this.y -= v.y;
+    return this;
+  }
+
+  scale(s: number): Vector {
+    this.x *= s;
+    this.y *= s;
+    return this;
+  }
+
   squaredMagnitude(): number {
     return this.x * this.x + this.y * this.y;
   }
@@ -23,5 +41,10 @@ export class Vector {
     this.y /= mag;
 
     return this;
+  }
+
+  lerp(to: Vector, t: number): Vector {
+    // a + (b - a) * t
+    return this.add(to.sub(this).scale(t));
   }
 }

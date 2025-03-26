@@ -5,7 +5,7 @@ import State from "./state";
 interface Globals {
   state: State;
   app: Application;
-  world: Container;
+  origin: Container;
   input: Input;
 }
 

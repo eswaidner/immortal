@@ -10,13 +10,17 @@ export default async function initPlayer() {
   const dude = new Sprite(dudeTex);
   dude.anchor = 0.5;
   dude.scale = scale;
-  g.world.addChild(dude);
+  g.origin.addChild(dude);
 
   const playerEnt = g.state.addEntity();
   playerEnt.set("direction", new Vector());
   playerEnt.set("face-direction", {});
   playerEnt.set("container", [dude as Container, scale]);
-  playerEnt.set("position", new Vector());
+  playerEnt.set(
+    "position",
+    new Vector(g.app.screen.width * 0.5, g.app.screen.height * 0.5),
+  );
+  playerEnt.set("camera-target", {});
 
   g.app.ticker.add((tk) => {
     move(tk, playerEnt);
