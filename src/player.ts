@@ -1,7 +1,8 @@
-import { Assets, Sprite, Ticker } from "pixi.js";
+import { Assets, Container, Sprite, Ticker } from "pixi.js";
 import Input from "./input";
 import { Vector } from "./math";
 import { g } from "./globals";
+import { Entity } from "./state";
 
 export default async function initPlayer() {
   const scale = 0.45;
@@ -13,12 +14,18 @@ export default async function initPlayer() {
   dude.position = { x: g.app.screen.width * 0.5, y: g.app.screen.height * 0.5 };
   g.app.stage.addChild(dude);
 
+  const db = g.state.getDatabase("main");
+  const playerEnt = db.addEntity();
+  playerEnt.set("direction", new Vector());
+  playerEnt.set("face-direction", {});
+  playerEnt.set("container", [dude as Container, scale]);
+
   g.app.ticker.add((tk) => {
-    move(tk, dude, g.input, scale);
+    move(tk, dude, playerEnt, g.input);
   });
 }
 
-function move(tk: Ticker, player: Sprite, input: Input, scale: number) {
+function move(tk: Ticker, player: Sprite, playerEnt: Entity, input: Input) {
   const speed = 10;
 
   let dx = 0;
@@ -30,10 +37,7 @@ function move(tk: Ticker, player: Sprite, input: Input, scale: number) {
   if (input.isKeyDown("w")) dy -= 1;
 
   const dir = new Vector(dx, dy).normalize();
-
-  if (dir.x !== 0) {
-    player.scale.x = dir.x > 0 ? scale : -scale;
-  }
+  playerEnt.set("direction", dir);
 
   player.x += dir.x * speed * tk.deltaTime;
   player.y += dir.y * speed * tk.deltaTime;
