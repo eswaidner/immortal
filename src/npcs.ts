@@ -9,6 +9,7 @@ export async function initNpcs() {
 
   Assets.load("/dude_1.png");
   Assets.load("/boar.webp");
+  Assets.load("/tree_1.webp");
 
   g.app.ticker.add(() => {
     updateFollow();

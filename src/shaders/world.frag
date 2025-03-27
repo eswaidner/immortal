@@ -1,3 +1,5 @@
+precision highp float;
+
 in vec2 vTextureCoord;
 in vec4 vColor;
 
@@ -31,8 +33,14 @@ vec3 splatStep(vec3 weights, vec3 heights, vec3 c0, vec3 c1, vec3 c2) {
     return mix(mix(c0.xyz, c1.xyz, 1.0 - maxXY), c2.xyz, maxXYZ);
 }
 
+float grid(float size, float thickness, vec2 pos) {
+    vec2 grid = 1.0 - step(thickness, fract(pos * size));
+    float mask = 1.0 - min(grid.x + grid.y, 1.0);
+    return mask;
+}
+
 // const float tileSize = 2.0;
-const float tileSize = 50.0;
+const float tileSize = 75.0;
 const float worldTextureSize = 512.0;
 const float halfWorldSize = worldTextureSize * tileSize * 0.5;
 const float cloudSize = 7.0;
@@ -82,18 +90,16 @@ void main(void) {
     //TODO surface texture samples
 
     vec3 surfColor = splatStep(surface.xyz, perlin.xyz, surface1Color, surface2Color, surface3Color);
-
     vec3 waterColor = mix(vec3(0.086, 0.235, 0.4) * 0.7, vec3(0.122, 0.314, 0.529), (1.0 - water.z + perlin_offset.x * waterNoiseBias));
-
     surfColor = mix(surfColor, waterColor, 0.8 * step(0.1, water.z - perlin_offset.x * waterNoiseBias));
 
-    // CLOUDS
-    // surfColor *= 1.0 - (clouds.x * cloudShadow);
+    // GRIDS
+    float tileGrid = 1.0 - grid(1.0, 0.025, worldCoord.xy * worldTextureSize);
+    float chunkGrid = 1.0 - grid(1.0 / 16.0, 0.005, worldCoord.xy * worldTextureSize);
 
-    vec4 fg = vec4(surfColor, 1.0);
-    // vec4 fg = vec4(waterColor, 1.0);
-    // vec4 fg = vec4(clouds.xxx, 1.0);
-    // vec4 fg = vec4(perlin.xxx, 1.0);
+    // vec4 fg = vec4(vTextureCoord, 0.0, 1.0);
+
+    vec4 fg = vec4(surfColor - (max(tileGrid, chunkGrid) * 0.025), 1.0);
 
     if (worldCoord.x < 0.0 || worldCoord.y < 0.0) fg = vec4(0, 0, 0, 1);
     if (worldCoord.x > 1.0 || worldCoord.y > 1.0) fg = vec4(0, 0, 0, 1);

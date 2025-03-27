@@ -62,11 +62,14 @@ async function init() {
 
     const tilePos = g.world.worldToTile(playerPos.x, playerPos.y);
     const tile = g.world.getTileData(tilePos.x, tilePos.y);
+    const chunkPos = g.world.tileToChunk(tilePos.x, tilePos.y);
 
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
 FPS: ${g.app.ticker.FPS.toFixed(0)}
+Pos: (${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)})
 Tile: ${tilePos.x}, ${tilePos.y}
+Chunk: ${chunkPos.x}, ${chunkPos.y}
 Region: ${tile.region ? tile.region.name : "undefined"} (${tile.regionId})
 Zone: ${tile.zone ? tile.zone.name : "undefined"} (${tile.zoneId})
 `;

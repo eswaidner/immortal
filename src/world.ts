@@ -1,4 +1,4 @@
-import { Assets, Filter, GlProgram, Sprite, Texture } from "pixi.js";
+import { Assets, Filter, GlProgram, Graphics, Sprite, Texture } from "pixi.js";
 import vertex from "./shaders/world.vert?raw";
 import fragment from "./shaders/world.frag?raw";
 import { g } from "./globals";
@@ -10,7 +10,7 @@ export class World {
   chunks: Chunk[][];
   tileDataMap: Uint8ClampedArray;
 
-  tileSize = 50; // pixels
+  tileSize = 75; // pixels
   chunkSize = 16; // tiles
   mapSize = 512; // tiles
 
@@ -18,7 +18,20 @@ export class World {
     this.chunks = []; //TODO populate chunks
     this.tileDataMap = tileDataMap;
 
-    console.log(this.getTileData(0, 0));
+    const chunkPx = this.chunkSize * this.tileSize;
+    const chunkGfx = new Graphics()
+      .rect(0, 0, chunkPx, chunkPx)
+      .stroke({ width: 2, color: "#FFFFFF" });
+
+    // chunkGfx.pivot = chunkPx * 0.5;
+    chunkGfx.position = {
+      x: 0.5 * g.app.screen.width,
+      y: 0.5 * g.app.screen.height,
+    };
+
+    g.origin.addChild(chunkGfx);
+
+    g.app.ticker.add(() => {});
   }
 
   getTileData(x: number, y: number): TileData {
@@ -39,9 +52,29 @@ export class World {
 
   worldToTile(x: number, y: number): { x: number; y: number } {
     const halfMapSizePx = this.mapSize * this.tileSize * 0.5;
+    const offset = {
+      x: 0.5 * g.app.screen.width,
+      y: 0.5 * g.app.screen.height,
+    };
+
     return {
-      x: clamp(Math.floor((x + halfMapSizePx) / 50), 0, this.mapSize - 1),
-      y: clamp(Math.floor((y + halfMapSizePx) / 50), 0, this.mapSize - 1),
+      x: clamp(
+        Math.floor((x + halfMapSizePx - offset.x) / this.tileSize),
+        0,
+        this.mapSize - 1,
+      ),
+      y: clamp(
+        Math.floor((y + halfMapSizePx - offset.y) / this.tileSize),
+        0,
+        this.mapSize - 1,
+      ),
+    };
+  }
+
+  tileToChunk(x: number, y: number): { x: number; y: number } {
+    return {
+      x: clamp(Math.floor(x / this.chunkSize), 0, this.mapSize - 1),
+      y: clamp(Math.floor(y / this.chunkSize), 0, this.mapSize - 1),
     };
   }
 }
