@@ -61,11 +61,15 @@ async function init() {
     const playerPos = player.get<Vector>("position")!;
 
     const tilePos = g.world.worldToTile(playerPos.x, playerPos.y);
+    const tile = g.world.getTileData(tilePos.x, tilePos.y);
 
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
 FPS: ${g.app.ticker.FPS.toFixed(0)}
-Tile: ${tilePos.x}, ${tilePos.y}`;
+Tile: ${tilePos.x}, ${tilePos.y}
+Region: ${tile.region ? tile.region.name : "undefined"} (${tile.regionId})
+Zone: ${tile.zone ? tile.zone.name : "undefined"} (${tile.zoneId})
+`;
   });
 }
 

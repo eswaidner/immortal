@@ -22,10 +22,12 @@ export class World {
   }
 
   getTileData(x: number, y: number): TileData {
-    const zoneId = this.tileDataMap[this.getTileIndex(x, y) * 3];
-    const regionId = this.tileDataMap[this.getTileIndex(x, y) * 3 + 1];
+    const zoneId = this.tileDataMap[this.getTileIndex(x, y) * 4];
+    const regionId = this.tileDataMap[this.getTileIndex(x, y) * 4 + 1];
 
     return {
+      zoneId,
+      regionId,
       zone: zones[zoneId],
       region: regions[regionId],
     };
@@ -45,6 +47,8 @@ export class World {
 }
 
 interface TileData {
+  zoneId: number;
+  regionId: number;
   zone: Zone;
   region: Region;
 }
