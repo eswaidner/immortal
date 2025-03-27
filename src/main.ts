@@ -1,11 +1,11 @@
 import "./style.css";
 import { Application, Container, Text } from "pixi.js";
 import Input from "./input";
-import initWorld from "./world";
+import initWorld, { World } from "./world";
 import initPlayer from "./player";
 import initCamera from "./camera";
 import State from "./state";
-import { g, initGlobals } from "./globals";
+import { g, initGlobals, setWorld } from "./globals";
 import { Vector } from "./math";
 import { initNpcs } from "./npcs";
 
@@ -15,6 +15,7 @@ async function init() {
     origin: new Container(),
     state: new State(),
     input: new Input(),
+    world: undefined as unknown as World, // temp
   });
 
   g.app.stage.addChild(g.origin);
@@ -39,10 +40,11 @@ async function init() {
 
   appHolder.appendChild(g.app.canvas);
 
-  initWorld();
+  setWorld(await initWorld());
+
   initCamera();
-  initPlayer();
   initNpcs();
+  const player = await initPlayer();
 
   const txt = new Text({
     text: `Immortal`,
@@ -56,9 +58,14 @@ async function init() {
     faceDirection();
     updatePositions();
 
+    const playerPos = player.get<Vector>("position")!;
+
+    const tilePos = g.world.worldToTile(playerPos.x, playerPos.y);
+
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
-FPS: ${g.app.ticker.FPS.toFixed(0)}`;
+FPS: ${g.app.ticker.FPS.toFixed(0)}
+Tile: ${tilePos.x}, ${tilePos.y}`;
   });
 }
 

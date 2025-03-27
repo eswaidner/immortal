@@ -4,8 +4,9 @@ import fragment from "./shaders/world.frag?raw";
 import { g } from "./globals";
 import { Region, regions } from "./regions";
 import { Zone, zones } from "./zones";
+import { clamp } from "./math";
 
-class World {
+export class World {
   chunks: Chunk[][];
   tileDataMap: Uint8ClampedArray;
 
@@ -33,6 +34,14 @@ class World {
   getTileIndex(x: number, y: number): number {
     return y * this.mapSize + x;
   }
+
+  worldToTile(x: number, y: number): { x: number; y: number } {
+    const halfMapSizePx = this.mapSize * this.tileSize * 0.5;
+    return {
+      x: clamp(Math.floor((x + halfMapSizePx) / 50), 0, this.mapSize - 1),
+      y: clamp(Math.floor((y + halfMapSizePx) / 50), 0, this.mapSize - 1),
+    };
+  }
 }
 
 interface TileData {
@@ -53,7 +62,7 @@ async function getTileDataMapPixels(): Promise<Uint8ClampedArray> {
   return dataPixels.pixels;
 }
 
-export default async function initWorld() {
+export default async function initWorld(): Promise<World> {
   const world = new World(await getTileDataMapPixels());
 
   //TODO use manifest and bundles instead
@@ -131,4 +140,6 @@ export default async function initWorld() {
     };
     worldFilter.resources.metadata.uniforms.time = tk.lastTime;
   });
+
+  return world;
 }

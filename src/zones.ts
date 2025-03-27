@@ -1,6 +1,6 @@
 export const zones: Zone[] = [
   { id: 0, name: "NONE" },
-  { id: 1, name: "1" },
+  { id: 1, name: "player" },
   { id: 2, name: "2" },
   { id: 3, name: "3" },
   { id: 4, name: "4" },

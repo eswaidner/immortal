@@ -73,3 +73,7 @@ export function remap(
 ) {
   return b0 + ((b1 - b0) * (x - a0)) / (a1 - a0);
 }
+
+export function clamp(x: number, min: number, max: number) {
+  return Math.max(min, Math.min(x, max));
+}

@@ -4,7 +4,9 @@ import { g } from "./globals";
 import { Entity } from "./state";
 import { spawnUnits } from "./npcs";
 
-export default async function initPlayer() {
+export default async function initPlayer(): Promise<Entity> {
+  g.state.addAttribute<{}>("player");
+
   const scale = 0.45;
 
   const dudeTex = await Assets.load("/dude_1.png");
@@ -14,6 +16,7 @@ export default async function initPlayer() {
   g.origin.addChild(dude);
 
   const playerEnt = g.state.addEntity();
+  playerEnt.set("player", {});
   playerEnt.set("direction", new Vector());
   playerEnt.set("face-direction", {});
   playerEnt.set("container", [dude as Container, scale]);
@@ -28,6 +31,8 @@ export default async function initPlayer() {
   });
 
   spawnUnits(playerEnt, 10);
+
+  return playerEnt;
 }
 
 function move(tk: Ticker, playerEnt: Entity) {
