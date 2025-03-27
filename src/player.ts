@@ -27,7 +27,7 @@ export default async function initPlayer() {
     move(tk, playerEnt);
   });
 
-  spawnUnits(playerEnt, 100);
+  spawnUnits(playerEnt, 10);
 }
 
 function move(tk: Ticker, playerEnt: Entity) {

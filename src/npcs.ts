@@ -1,11 +1,14 @@
 import { Assets, Container, Sprite, Texture } from "pixi.js";
 import { g } from "./globals";
-import { remap, Vector } from "./math";
+import { Vector } from "./math";
 import { Entity } from "./state";
 
-export function initNpcs() {
+export async function initNpcs() {
   g.state.addAttribute<Unit>("unit");
   g.state.addAttribute<Follow>("follow");
+
+  Assets.load("/dude_1.png");
+  Assets.load("/boar.webp");
 
   g.app.ticker.add(() => {
     updateFollow();
@@ -91,3 +94,7 @@ function updateFollow() {
     }
   }
 }
+
+function updateRoam() {}
+
+function updateAttack() {}
