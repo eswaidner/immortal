@@ -2,6 +2,7 @@ import { Assets, Container, Sprite, Texture } from "pixi.js";
 import { g } from "./globals";
 import { Vector } from "./math";
 import { Entity } from "./state";
+import { SpriteDepth } from "./main";
 
 export async function initNpcs() {
   g.state.addAttribute<Unit>("unit");
@@ -48,6 +49,8 @@ async function spawnUnit(owner: Entity) {
 
   const scale = 0.35;
   unitSprite.scale = scale;
+
+  unit.set<SpriteDepth>("sprite-depth", { offset: unitSprite.height * 0.5 });
 
   g.origin.addChild(unitSprite);
   unit.set<[Container, number]>("container", [unitSprite, scale]);

@@ -3,6 +3,7 @@ import { Vector } from "./math";
 import { g } from "./globals";
 import { Entity } from "./state";
 import { spawnUnits } from "./npcs";
+import { SpriteDepth } from "./main";
 
 export default async function initPlayer(): Promise<Entity> {
   const scale = 0.45;
@@ -18,6 +19,7 @@ export default async function initPlayer(): Promise<Entity> {
   playerEnt.set("direction", new Vector());
   playerEnt.set("face-direction", {});
   playerEnt.set("container", [dude as Container, scale]);
+  playerEnt.set<SpriteDepth>("sprite-depth", { offset: dude.height * 0.5 });
   playerEnt.set(
     "position",
     new Vector(g.app.screen.width * 0.5, g.app.screen.height * 0.5),
@@ -26,7 +28,6 @@ export default async function initPlayer(): Promise<Entity> {
 
   g.app.ticker.add((tk) => {
     move(tk, playerEnt);
-    dude.zIndex = dude.y + dude.height * 0.5;
   });
 
   spawnUnits(playerEnt, 10);

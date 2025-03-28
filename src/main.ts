@@ -25,6 +25,7 @@ async function init() {
   g.state.addAttribute<[Container, number]>("container");
   g.state.addAttribute<[Container, number]>("world-positioned");
   g.state.addAttribute<{}>("player");
+  g.state.addAttribute<SpriteDepth>("sprite-depth");
 
   const appHolder = document.querySelector("#app")!;
 
@@ -58,6 +59,7 @@ async function init() {
     updateWorldOriginPosition();
     faceDirection();
     updatePositions();
+    updateSpriteDepth();
 
     const playerPos = player.get<Vector>("position")!;
 
@@ -80,6 +82,10 @@ Region: ${tile.region ? tile.region.name : "undefined"} (${tile.regionId})
 Zone: ${tile.zone ? tile.zone.name : "undefined"} (${tile.zoneId})
 `;
   });
+}
+
+export interface SpriteDepth {
+  offset: number;
 }
 
 function faceDirection() {
@@ -116,6 +122,17 @@ function updatePositions() {
 
     c.x = pos.x;
     c.y = pos.y;
+  }
+}
+
+function updateSpriteDepth() {
+  const q = g.state.query({ include: ["sprite-depth", "container"] });
+
+  for (let e of q.entities) {
+    const spriteDepth = e.attributes["sprite-depth"] as SpriteDepth;
+    const [container, _] = e.attributes["container"] as [Container, number];
+
+    container.zIndex = container.y + spriteDepth.offset;
   }
 }
 
