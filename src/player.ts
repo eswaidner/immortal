@@ -5,8 +5,6 @@ import { Entity } from "./state";
 import { spawnUnits } from "./npcs";
 
 export default async function initPlayer(): Promise<Entity> {
-  g.state.addAttribute<{}>("player");
-
   const scale = 0.45;
 
   const dudeTex = await Assets.load("/dude_1.png");
@@ -28,6 +26,7 @@ export default async function initPlayer(): Promise<Entity> {
 
   g.app.ticker.add((tk) => {
     move(tk, playerEnt);
+    dude.zIndex = dude.y + dude.height * 0.5;
   });
 
   spawnUnits(playerEnt, 10);

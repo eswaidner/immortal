@@ -24,6 +24,7 @@ async function init() {
   g.state.addAttribute<{}>("face-direction");
   g.state.addAttribute<[Container, number]>("container");
   g.state.addAttribute<[Container, number]>("world-positioned");
+  g.state.addAttribute<{}>("player");
 
   const appHolder = document.querySelector("#app")!;
 
@@ -63,11 +64,16 @@ async function init() {
     const tilePos = g.world.worldToTile(playerPos.x, playerPos.y);
     const tile = g.world.getTileData(tilePos.x, tilePos.y);
     const chunkPos = g.world.tileToChunk(tilePos.x, tilePos.y);
+    const worldPosConverted = g.world.chunks[chunkPos.y][chunkPos.x].worldPos(
+      tilePos.x - chunkPos.x * g.world.chunkSize,
+      tilePos.y - chunkPos.y * g.world.chunkSize,
+    );
 
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
 FPS: ${g.app.ticker.FPS.toFixed(0)}
 Pos: (${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)})
+Pos (Converted): ${worldPosConverted.x}, ${worldPosConverted.y}
 Tile: ${tilePos.x}, ${tilePos.y}
 Chunk: ${chunkPos.x}, ${chunkPos.y}
 Region: ${tile.region ? tile.region.name : "undefined"} (${tile.regionId})

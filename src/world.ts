@@ -1,13 +1,22 @@
-import { Assets, Filter, GlProgram, Graphics, Sprite, Texture } from "pixi.js";
+import {
+  Assets,
+  Container,
+  Filter,
+  GlProgram,
+  Graphics,
+  Sprite,
+  Texture,
+} from "pixi.js";
 import vertex from "./shaders/world.vert?raw";
 import fragment from "./shaders/world.frag?raw";
 import { g } from "./globals";
 import { Region, regions } from "./regions";
 import { Zone, zones } from "./zones";
-import { clamp } from "./math";
+import { clamp, Vector } from "./math";
 
 export class World {
-  chunks: Chunk[][];
+  chunks: Chunk[][] = [];
+  loadedChunks: Map<number, Chunk> = new Map();
   tileDataMap: Uint8ClampedArray;
 
   tileSize = 75; // pixels
@@ -15,23 +24,62 @@ export class World {
   mapSize = 512; // tiles
 
   constructor(tileDataMap: Uint8ClampedArray) {
-    this.chunks = []; //TODO populate chunks
     this.tileDataMap = tileDataMap;
 
-    const chunkPx = this.chunkSize * this.tileSize;
-    const chunkGfx = new Graphics()
-      .rect(0, 0, chunkPx, chunkPx)
-      .stroke({ width: 2, color: "#FFFFFF" });
+    const mapSizeChunks = this.mapSize / this.chunkSize;
 
-    // chunkGfx.pivot = chunkPx * 0.5;
-    chunkGfx.position = {
-      x: 0.5 * g.app.screen.width,
-      y: 0.5 * g.app.screen.height,
-    };
+    // spawn chunks
+    for (let y = 0; y < mapSizeChunks; y++) {
+      this.chunks.push([]);
+      for (let x = 0; x < mapSizeChunks; x++) {
+        this.chunks[y].push(new Chunk(new Vector(x, y), this));
+      }
+    }
 
-    g.origin.addChild(chunkGfx);
+    g.app.ticker.add(() => {
+      const playerQ = g.state.query({ include: ["player", "position"] });
+      const player = playerQ.entities[0];
+      if (!player) return;
 
-    g.app.ticker.add(() => {});
+      const playerPos = player.attributes["position"] as Vector;
+
+      const tilePos = g.world.worldToTile(playerPos.x, playerPos.y);
+      const chunkPos = g.world.tileToChunk(tilePos.x, tilePos.y);
+
+      const hcpx = 0.5 * this.chunkSize * this.tileSize;
+      const xChunks = Math.floor(Math.ceil(g.app.screen.width / hcpx) * 0.5);
+      const yChunks = Math.floor(Math.ceil(g.app.screen.height / hcpx) * 0.5);
+
+      const maxChunk = this.mapSize / this.chunkSize - 1;
+
+      const minChunkX = Math.max(chunkPos.x - xChunks, 0);
+      const minChunkY = Math.max(chunkPos.y - yChunks, 0);
+      const maxChunkX = Math.min(chunkPos.x + xChunks, maxChunk);
+      const maxChunkY = Math.min(chunkPos.y + yChunks, maxChunk);
+
+      const chunksToUnload = [];
+
+      for (let c of this.loadedChunks.values()) {
+        if (
+          c.pos.x < minChunkX ||
+          c.pos.y < minChunkY ||
+          c.pos.x > maxChunkX ||
+          c.pos.y > maxChunkY
+        ) {
+          chunksToUnload.push(c);
+        }
+      }
+
+      for (const chunk of chunksToUnload) {
+        chunk.unload();
+      }
+
+      for (let y = minChunkY; y <= maxChunkY; y++) {
+        for (let x = minChunkX; x <= maxChunkX; x++) {
+          this.chunks[y][x].load();
+        }
+      }
+    });
   }
 
   getTileData(x: number, y: number): TileData {
@@ -86,7 +134,102 @@ interface TileData {
   region: Region;
 }
 
-interface Chunk {}
+class Chunk {
+  world: World;
+  pos: Vector;
+  border: Graphics;
+  props: Container[] = [];
+
+  constructor(pos: Vector, world: World) {
+    this.world = world;
+    this.pos = pos;
+
+    const chunkPx = this.world.chunkSize * this.world.tileSize;
+    this.border = new Graphics()
+      .rect(0, 0, chunkPx, chunkPx)
+      .stroke({ width: 2, color: "#101010" });
+
+    this.border.position = {
+      x: 0.5 * g.app.screen.width + (this.pos.x - 16) * chunkPx,
+      y: 0.5 * g.app.screen.height + (this.pos.y - 16) * chunkPx,
+    };
+
+    this.border.tint = 0xff0000;
+
+    // BORDER VISUALIZATION FOR DEBUGGING
+    // g.origin.addChild(this.border);
+  }
+
+  load() {
+    if (this.world.loadedChunks.has(this.index())) return;
+    this.world.loadedChunks.set(this.index(), this);
+
+    this.border.tint = 0xffffff;
+
+    const tileCount = this.world.chunkSize * this.world.chunkSize;
+    for (let i = 0; i < tileCount; i++) {
+      const x = i % this.world.chunkSize;
+      const y = Math.floor(i / this.world.chunkSize);
+
+      const tile = this.world.getTileData(
+        x + this.pos.x * this.world.chunkSize,
+        y + this.pos.y * this.world.chunkSize,
+      );
+
+      if (tile.zone.name === "Forrest") {
+        spawnTileProp(x, y, "/tree_1.webp", this);
+      }
+    }
+  }
+
+  unload() {
+    if (!this.world.loadedChunks.has(this.index())) return;
+    this.world.loadedChunks.delete(this.index());
+
+    for (let i = this.props.length; i >= 0; i--) {
+      const prop = this.props.pop();
+      prop?.destroy();
+    }
+
+    this.border.tint = 0xff0000;
+  }
+
+  index(): number {
+    return (
+      this.pos.x + (this.world.mapSize / this.world.chunkSize) * this.pos.y
+    );
+  }
+
+  worldPos(x: number, y: number): Vector {
+    const halfMapSizePx = this.world.mapSize * this.world.tileSize * 0.5;
+    const offset = this.pos.scale(this.world.chunkSize * this.world.tileSize);
+
+    return new Vector(
+      x * this.world.tileSize +
+        offset.x -
+        halfMapSizePx +
+        g.app.screen.width * 0.5,
+      y * this.world.tileSize +
+        offset.y -
+        halfMapSizePx +
+        g.app.screen.height * 0.5,
+    );
+  }
+}
+
+async function spawnTileProp(x: number, y: number, url: string, chunk: Chunk) {
+  const tree = new Sprite(await Assets.load(url));
+  const worldPos = chunk.worldPos(x, y);
+  tree.x = worldPos.x;
+  tree.y = worldPos.y;
+  tree.anchor = 0.5;
+  tree.scale = 0.65;
+  tree.zIndex = tree.y + tree.height * 0.5;
+
+  chunk.props.push(tree as Container);
+
+  g.origin.addChild(tree);
+}
 
 // gets pixel data for tile data map
 async function getTileDataMapPixels(): Promise<Uint8ClampedArray> {
