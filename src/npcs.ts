@@ -10,7 +10,11 @@ export async function initNpcs() {
   g.state.addAttribute<Attack>("attack");
   g.state.addAttribute<Follow>("follow");
   g.state.addAttribute<Roam>("roam");
+  g.state.addAttribute<AutoAttack>("auto-attack");
   g.state.addAttribute<Speed>("speed");
+  g.state.addAttribute<{}>("friend");
+  g.state.addAttribute<{}>("neutral");
+  g.state.addAttribute<{}>("enemy");
 
   Assets.load("/dude_1.png");
   Assets.load("/boar.webp");
@@ -21,6 +25,7 @@ export async function initNpcs() {
     updateRoam();
     updateAttack();
     updateBeastAggro();
+    updateAutoAttack();
   });
 }
 
@@ -35,6 +40,7 @@ async function spawnUnit(owner: Entity) {
 
   const unit = g.state.addEntity();
   unit.set<Unit>("unit", { owner });
+  unit.set("friend", {});
   unit.set<Vector>(
     "position",
     new Vector(g.app.screen.width * 0.5, g.app.screen.height * 0.5).add(offset),
@@ -85,10 +91,18 @@ export interface Roam {
   elapsedWait: number;
 }
 
+// todo rename to Charge
 export interface Attack {
   target: Entity;
   minRange: number; // want to stay at least this far away
   maxRange: number; // want to get at least this close
+}
+
+export interface AutoAttack {
+  cooldown: number;
+  elapsedCooldown: number;
+  range: number;
+  attack: (sender: Entity, target: Entity) => void;
 }
 
 export interface Speed {
@@ -184,6 +198,12 @@ function updateAttack() {
     const pos = e.attributes["position"] as Vector;
     const speed = e.attributes["speed"] as Speed;
 
+    // break aggro target died
+    if (attack.target.get("dead")) {
+      e.entity.delete("attack");
+      continue;
+    }
+
     // target must have position attribute
     const targetPos = attack.target.get<Vector>("position");
     if (targetPos === undefined) continue;
@@ -215,6 +235,7 @@ function updateBeastAggro() {
 
   const playerQ = g.state.query({
     include: ["player", "position"],
+    exclude: ["dead"],
   });
 
   if (!playerQ.entities[0]) return;
@@ -232,5 +253,34 @@ function updateBeastAggro() {
         maxRange: 75,
       });
     }
+  }
+}
+
+function updateAutoAttack() {
+  const q = g.state.query({
+    include: ["attack", "auto-attack", "position"],
+    exclude: ["dead"],
+  });
+
+  for (const e of q.entities) {
+    const attack = e.attributes["attack"] as Attack;
+    const auto = e.attributes["auto-attack"] as AutoAttack;
+    const pos = e.attributes["position"] as Vector;
+
+    // cooldown
+    auto.elapsedCooldown += g.app.ticker.deltaMS * 0.001;
+    if (auto.elapsedCooldown < auto.cooldown) continue;
+
+    const targetPos = attack.target.get<Vector>("position");
+    if (!targetPos) continue;
+
+    const delta = targetPos.sub(pos);
+
+    // range
+    if (delta.squaredMagnitude() > auto.range * auto.range) continue;
+
+    auto.attack(e.entity, attack.target);
+
+    auto.elapsedCooldown = 0;
   }
 }

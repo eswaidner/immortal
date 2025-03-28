@@ -1,6 +1,6 @@
-import { Container, Graphics, Sprite } from "pixi.js";
+import { Container } from "pixi.js";
 import { g } from "./globals";
-import { rad2Deg, randomRange, Vector } from "./math";
+import { Vector } from "./math";
 import { Entity } from "./state";
 import { queryPoint } from "./collisions";
 import { damage } from "./hitpoints";
@@ -39,6 +39,7 @@ interface Projectile {
   damage: number;
   knockback: Vector;
   hits: number;
+  hitExclude: string[];
 }
 
 export interface FlatProjectile extends Projectile {
@@ -83,12 +84,12 @@ function updateFlatProjectiles() {
     const collisions = queryPoint(pos, proj.hitRadius, Infinity, [
       "invulnerable",
       "dead",
+      ...proj.hitExclude,
     ]);
 
     for (const c of collisions) {
       if (proj.hits >= proj.maxHits) break;
       damage(proj.damage, c.ent);
-      console.log(`DAMAGE: ${proj.damage}`);
       proj.hits++;
     }
   }

@@ -15,9 +15,10 @@ import { Zone, zones } from "./zones";
 import { clamp, randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { SpriteDepth } from "./main";
-import { Follow, Roam, Speed } from "./npcs";
+import { AutoAttack, Follow, Roam, Speed } from "./npcs";
 import { Collider } from "./collisions";
 import { Hitpoints } from "./hitpoints";
+import { fireFlatProjectile } from "./projectiles";
 
 export class World {
   chunks: Chunk[][] = [];
@@ -205,11 +206,48 @@ class Chunk {
             e.set<Speed>("speed", { speed: 0.03 });
             e.set("face-direction", {});
             e.set("beast", {});
+            e.set("enemy", {});
             e.set<Collider>("collider", {
               offset: new Vector(),
               radius: s.width * 0.5,
             });
             e.set<Hitpoints>("hitpoints", { hp: 50, maxHp: 50 });
+            e.set<AutoAttack>("auto-attack", {
+              cooldown: 1.5,
+              elapsedCooldown: 1.5,
+              range: 75,
+              attack: (sender, target) => {
+                const slashTex = g.assets.get("/projectiles/slash.webp");
+                const senderPos = sender.get<Vector>("position");
+                const targetPos = target.get<Vector>("position");
+
+                if (!slashTex || !senderPos || !targetPos) return;
+
+                const slash = new Sprite(slashTex);
+                slash.anchor = { x: 0, y: 0.5 };
+                slash.scale = 0.3;
+
+                const delta = targetPos.sub(senderPos);
+
+                fireFlatProjectile(
+                  {
+                    sender: sender,
+                    speed: 10,
+                    direction: delta.normalized(),
+                    range: 50,
+                    hitRadius: 50,
+                    maxHits: 1,
+                    damage: 5,
+                    knockback: new Vector(1, 1),
+                    hits: 0,
+                    distanceTraveled: 0,
+                    hitExclude: ["enemy", "neutral"],
+                  },
+                  new Vector(senderPos.x, senderPos.y),
+                  slash as Container,
+                );
+              },
+            });
           });
         }
       }

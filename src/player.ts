@@ -6,6 +6,7 @@ import { spawnUnits } from "./npcs";
 import { SpriteDepth } from "./main";
 import { fireFlatProjectile } from "./projectiles";
 import { Hitpoints, Regenerate } from "./hitpoints";
+import { Collider } from "./collisions";
 
 export default async function initPlayer(): Promise<Entity> {
   const scale = 0.45;
@@ -18,6 +19,7 @@ export default async function initPlayer(): Promise<Entity> {
 
   const playerEnt = g.state.addEntity();
   playerEnt.set("player", {});
+  playerEnt.set("friend", {});
   playerEnt.set("direction", new Vector());
   playerEnt.set("face-direction", {});
   playerEnt.set("container", [dude as Container, scale]);
@@ -27,6 +29,10 @@ export default async function initPlayer(): Promise<Entity> {
     new Vector(g.app.screen.width * 0.5, g.app.screen.height * 0.5),
   );
   playerEnt.set("camera-target", {});
+  playerEnt.set<Collider>("collider", {
+    offset: new Vector(),
+    radius: dude.x * 0.5,
+  });
 
   playerEnt.set<Hitpoints>("hitpoints", { hp: 100, maxHp: 100 });
   playerEnt.set<Regenerate>("regenerate", {
@@ -44,6 +50,7 @@ export default async function initPlayer(): Promise<Entity> {
 
   window.addEventListener("click", (e) => {
     if (e.button !== 0) return;
+    if (playerEnt.get("dead")) return;
 
     const slash = new Sprite(slashTex);
     slash.anchor = { x: 0, y: 0.5 };
@@ -65,6 +72,7 @@ export default async function initPlayer(): Promise<Entity> {
         knockback: new Vector(1, 1),
         hits: 0,
         distanceTraveled: 0,
+        hitExclude: ["friend"],
       },
       new Vector(dude.position.x, dude.position.y),
       slash as Container,
@@ -77,6 +85,8 @@ export default async function initPlayer(): Promise<Entity> {
 }
 
 function move(tk: Ticker, playerEnt: Entity) {
+  if (playerEnt.get("dead")) return;
+
   const speed = 6.5;
 
   let dx = 0;

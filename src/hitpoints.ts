@@ -45,8 +45,11 @@ export function damage(damage: number, ent: Entity) {
   if (!hp) return;
 
   hp.hp = Math.max(0, hp.hp - damage);
-  ent.set<Invulnerable>("invulnerable", { duration: 0.25 });
+  ent.set<Invulnerable>("invulnerable", { duration: 0.1 });
   ent.set<DamageFlash>("damage-flash", { duration: 0.1, elapsed: 0 });
+
+  const regen = ent.get<Regenerate>("regenerate");
+  if (regen) regen.elapsedDelay = 0;
 }
 
 function updateHitpoints() {

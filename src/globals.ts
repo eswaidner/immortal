@@ -1,4 +1,4 @@
-import { Application, Container } from "pixi.js";
+import { Application, Assets, Container } from "pixi.js";
 import Input from "./input";
 import State from "./state";
 import { World } from "./world";
@@ -9,12 +9,18 @@ interface Globals {
   origin: Container;
   input: Input;
   world: World;
+  assets: Map<string, any>;
 }
 
 export let g: Globals;
 
-export function initGlobals(globals: Globals) {
+export async function initGlobals(globals: Globals) {
   g = globals;
+
+  g.assets.set(
+    "/projectiles/slash.webp",
+    await Assets.load("/projectiles/slash.webp"),
+  );
 }
 
 export function setWorld(world: World) {

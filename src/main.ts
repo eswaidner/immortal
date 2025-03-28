@@ -10,7 +10,7 @@ import { Vector } from "./math";
 import { initNpcs } from "./npcs";
 import { initProjectiles } from "./projectiles";
 import { initCollisions } from "./collisions";
-import { initHitpoints } from "./hitpoints";
+import { Hitpoints, initHitpoints } from "./hitpoints";
 
 async function init() {
   initGlobals({
@@ -19,6 +19,7 @@ async function init() {
     state: new State(),
     input: new Input(),
     world: undefined as unknown as World, // temp
+    assets: new Map(), //temp
   });
 
   g.app.stage.addChild(g.origin);
@@ -81,6 +82,8 @@ async function init() {
       tilePos.y - chunkPos.y * g.world.chunkSize,
     );
 
+    const playerHp = player.get<Hitpoints>("hitpoints")!;
+
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
 FPS: ${g.app.ticker.FPS.toFixed(0)}
@@ -93,6 +96,7 @@ Chunk: ${chunkPos.x}, ${chunkPos.y}
 Region: ${tile.region ? tile.region.name : "undefined"} (${tile.regionId})
 Zone: ${tile.zone ? tile.zone.name : "undefined"} (${tile.zoneId})
 Entities: ${g.state.entities.size}
+HP: ${playerHp.hp.toFixed(0)}/${playerHp.maxHp.toFixed(0)}
 `;
   });
 }
