@@ -10,6 +10,7 @@ import { Vector } from "./math";
 import { initNpcs } from "./npcs";
 import { initProjectiles } from "./projectiles";
 import { initCollisions } from "./collisions";
+import { initHitpoints } from "./hitpoints";
 
 async function init() {
   initGlobals({
@@ -49,6 +50,7 @@ async function init() {
 
   setWorld(await initWorld());
 
+  initHitpoints();
   initCollisions();
   initCamera();
   initProjectiles();

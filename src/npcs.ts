@@ -98,7 +98,7 @@ export interface Speed {
 function updateFollow() {
   const q = g.state.query({
     include: ["follow", "position", "speed"],
-    exclude: ["attack"], // attack takes priority over follow
+    exclude: ["attack", "dead"], // attack takes priority over follow
   });
 
   for (const e of q.entities) {
@@ -133,7 +133,7 @@ function updateFollow() {
 function updateRoam() {
   const q = g.state.query({
     include: ["roam", "position", "speed"],
-    exclude: ["attack", "follow"], // attack and follow take priority over roam
+    exclude: ["attack", "follow", "dead"], // attack and follow take priority over roam
   });
 
   for (const e of q.entities) {
@@ -176,6 +176,7 @@ function updateRoam() {
 function updateAttack() {
   const q = g.state.query({
     include: ["attack", "position", "speed"],
+    exclude: ["dead"],
   });
 
   for (const e of q.entities) {
@@ -209,7 +210,7 @@ function updateAttack() {
 function updateBeastAggro() {
   const beastQ = g.state.query({
     include: ["beast", "position"],
-    exclude: ["attack"],
+    exclude: ["attack", "dead"],
   });
 
   const playerQ = g.state.query({

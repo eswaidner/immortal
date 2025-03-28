@@ -3,6 +3,7 @@ import { g } from "./globals";
 import { rad2Deg, randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { queryPoint } from "./collisions";
+import { damage } from "./hitpoints";
 
 export async function initProjectiles() {
   g.state.addAttribute<FlatProjectile>("flat-projectile");
@@ -64,7 +65,7 @@ function updateFlatProjectiles() {
     const proj = e.attributes["flat-projectile"] as FlatProjectile;
     const pos = e.attributes["position"] as Vector;
 
-    if (proj.distanceTraveled >= proj.range) {
+    if (proj.distanceTraveled >= proj.range || proj.hits >= proj.maxHits) {
       const [c, _] = e.attributes["container"];
       if (c) c.destroy();
 
@@ -79,10 +80,15 @@ function updateFlatProjectiles() {
 
     proj.distanceTraveled += delta.magnitude();
 
-    const collisions = queryPoint(pos, proj.hitRadius);
+    const collisions = queryPoint(pos, proj.hitRadius, Infinity, [
+      "invulnerable",
+      "dead",
+    ]);
+
     for (const c of collisions) {
       if (proj.hits >= proj.maxHits) break;
-      //TODO hit effects
+      damage(proj.damage, c.ent);
+      console.log(`DAMAGE: ${proj.damage}`);
       proj.hits++;
     }
   }

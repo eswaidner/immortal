@@ -5,6 +5,7 @@ import { Entity } from "./state";
 import { spawnUnits } from "./npcs";
 import { SpriteDepth } from "./main";
 import { fireFlatProjectile } from "./projectiles";
+import { Hitpoints, Regenerate } from "./hitpoints";
 
 export default async function initPlayer(): Promise<Entity> {
   const scale = 0.45;
@@ -27,6 +28,14 @@ export default async function initPlayer(): Promise<Entity> {
   );
   playerEnt.set("camera-target", {});
 
+  playerEnt.set<Hitpoints>("hitpoints", { hp: 100, maxHp: 100 });
+  playerEnt.set<Regenerate>("regenerate", {
+    rate: 5,
+    maxRegenPercent: 0.75,
+    delay: 5,
+    elapsedDelay: 0,
+  });
+
   g.app.ticker.add((tk) => {
     move(tk, playerEnt);
   });
@@ -37,7 +46,7 @@ export default async function initPlayer(): Promise<Entity> {
     if (e.button !== 0) return;
 
     const slash = new Sprite(slashTex);
-    slash.anchor = 0.5;
+    slash.anchor = { x: 0, y: 0.5 };
     slash.scale = 0.4;
 
     const delta = g.input.pointerWorldPos.sub(
@@ -49,7 +58,7 @@ export default async function initPlayer(): Promise<Entity> {
         sender: playerEnt,
         speed: 10,
         direction: delta.normalized(),
-        range: 25,
+        range: 75,
         hitRadius: 75,
         maxHits: 1,
         damage: 10,

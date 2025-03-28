@@ -17,6 +17,7 @@ import { Entity } from "./state";
 import { SpriteDepth } from "./main";
 import { Follow, Roam, Speed } from "./npcs";
 import { Collider } from "./collisions";
+import { Hitpoints } from "./hitpoints";
 
 export class World {
   chunks: Chunk[][] = [];
@@ -208,6 +209,7 @@ class Chunk {
               offset: new Vector(),
               radius: s.width * 0.5,
             });
+            e.set<Hitpoints>("hitpoints", { hp: 50, maxHp: 50 });
           });
         }
       }
