@@ -12,7 +12,7 @@ import fragment from "./shaders/world.frag?raw";
 import { g } from "./globals";
 import { Region, regions } from "./regions";
 import { Zone, zones } from "./zones";
-import { clamp, Vector } from "./math";
+import { clamp, randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { SpriteDepth } from "./main";
 import { Follow, Roam, Speed } from "./npcs";
@@ -182,12 +182,16 @@ class Chunk {
 
       if (tile.zone.name === "Forrest") {
         spawnTileProp(x, y, 0.65, "/tree_1.webp", this, (e, s) => {
-          //TODO configure
+          s.scale = s.scale.x * randomRange(0.75, 1);
+
+          const pos = e.get<Vector>("position")!;
+
+          pos.x += randomRange(-1, 1) * 10;
+          pos.y += randomRange(-1, 1) * 10;
         });
       } else if (tile.zone.name === "Arid") {
         if (Math.random() > 0.99) {
           spawnTileProp(x, y, 0.35, "/boar.webp", this, (e, s) => {
-            //TODO configure
             e.set<Roam>("roam", {
               pos: new Vector(s.x, s.y),
               range: 200,

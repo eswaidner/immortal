@@ -80,6 +80,7 @@ Tile: ${tilePos.x}, ${tilePos.y}
 Chunk: ${chunkPos.x}, ${chunkPos.y}
 Region: ${tile.region ? tile.region.name : "undefined"} (${tile.regionId})
 Zone: ${tile.zone ? tile.zone.name : "undefined"} (${tile.zoneId})
+Entities: ${g.state.entities.size}
 `;
   });
 }

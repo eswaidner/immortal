@@ -1,16 +1,23 @@
 export default class State {
-  entities: (number | undefined)[] = [];
+  nextId: number = 1;
+  entities: Set<number> = new Set();
   attributes: Record<string, object> = {};
 
+  getId() {
+    //TODO recycle ids?
+    const id = this.nextId;
+    this.nextId++;
+    return id;
+  }
+
   addEntity(): Entity {
-    //TODO progressively recycle ids
-    const ent = new Entity(this.entities.length, this);
-    this.entities.push(ent.id);
+    const ent = new Entity(this.getId(), this);
+    this.entities.add(ent.id);
     return ent;
   }
 
   deleteEntity(id: number) {
-    this.entities[id] = undefined;
+    this.entities.delete(id);
 
     for (const c of Object.values(this.attributes)) {
       (c as Attribute<any>).instances.delete(id);
@@ -24,8 +31,9 @@ export default class State {
   }
 
   getEntity(id: number): Entity | undefined {
-    const val = this.entities[id];
-    return val !== undefined ? new Entity(id, this) : undefined;
+    return this.entities.has(id) !== undefined
+      ? new Entity(id, this)
+      : undefined;
   }
 
   getAttribute<T>(name: string): Attribute<T> {
