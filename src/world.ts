@@ -16,6 +16,7 @@ import { clamp, randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { SpriteDepth } from "./main";
 import { Follow, Roam, Speed } from "./npcs";
+import { Collider } from "./collisions";
 
 export class World {
   chunks: Chunk[][] = [];
@@ -203,6 +204,10 @@ class Chunk {
             e.set<Speed>("speed", { speed: 0.03 });
             e.set("face-direction", {});
             e.set("beast", {});
+            e.set<Collider>("collider", {
+              offset: new Vector(),
+              radius: s.width * 0.5,
+            });
           });
         }
       }

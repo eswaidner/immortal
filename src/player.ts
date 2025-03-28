@@ -54,6 +54,7 @@ export default async function initPlayer(): Promise<Entity> {
         maxHits: 1,
         damage: 10,
         knockback: new Vector(1, 1),
+        hits: 0,
         distanceTraveled: 0,
       },
       new Vector(dude.position.x, dude.position.y),

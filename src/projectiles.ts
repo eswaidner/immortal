@@ -1,7 +1,8 @@
-import { Container, Sprite } from "pixi.js";
+import { Container, Graphics, Sprite } from "pixi.js";
 import { g } from "./globals";
 import { rad2Deg, randomRange, Vector } from "./math";
 import { Entity } from "./state";
+import { queryPoint } from "./collisions";
 
 export async function initProjectiles() {
   g.state.addAttribute<FlatProjectile>("flat-projectile");
@@ -36,6 +37,7 @@ interface Projectile {
   maxHits: number;
   damage: number;
   knockback: Vector;
+  hits: number;
 }
 
 export interface FlatProjectile extends Projectile {
@@ -76,6 +78,13 @@ function updateFlatProjectiles() {
     pos.y += delta.y;
 
     proj.distanceTraveled += delta.magnitude();
+
+    const collisions = queryPoint(pos, proj.hitRadius);
+    for (const c of collisions) {
+      if (proj.hits >= proj.maxHits) break;
+      //TODO hit effects
+      proj.hits++;
+    }
   }
 }
 
