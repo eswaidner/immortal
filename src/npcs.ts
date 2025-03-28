@@ -3,6 +3,7 @@ import { g } from "./globals";
 import { randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { SpriteDepth } from "./main";
+import { fireFlatProjectile } from "./projectiles";
 
 export async function initNpcs() {
   g.state.addAttribute<Unit>("unit");
@@ -25,6 +26,7 @@ export async function initNpcs() {
     updateRoam();
     updateAttack();
     updateBeastAggro();
+    updateUnitAggro();
     updateAutoAttack();
   });
 }
@@ -68,6 +70,43 @@ async function spawnUnit(owner: Entity) {
 
   g.origin.addChild(unitSprite);
   unit.set<[Container, number]>("container", [unitSprite, scale]);
+
+  unit.set<AutoAttack>("auto-attack", {
+    cooldown: 1.5,
+    elapsedCooldown: 1.5,
+    range: 75,
+    attack: (sender, target) => {
+      const slashTex = g.assets.get("/projectiles/slash.webp");
+      const senderPos = sender.get<Vector>("position");
+      const targetPos = target.get<Vector>("position");
+
+      if (!slashTex || !senderPos || !targetPos) return;
+
+      const slash = new Sprite(slashTex);
+      slash.anchor = { x: 0, y: 0.5 };
+      slash.scale = 0.15;
+
+      const delta = targetPos.sub(senderPos);
+
+      fireFlatProjectile(
+        {
+          sender: sender,
+          speed: 10,
+          direction: delta.normalized(),
+          range: 50,
+          hitRadius: slash.x * 0.5,
+          maxHits: 1,
+          damage: 2,
+          knockback: new Vector(0.5, 0),
+          hits: 0,
+          distanceTraveled: 0,
+          hitExclude: ["friend", "neutral"],
+        },
+        new Vector(senderPos.x, senderPos.y),
+        slash as Container,
+      );
+    },
+  });
 }
 
 interface Unit {
@@ -120,10 +159,10 @@ function updateFollow() {
     const pos = e.attributes["position"] as Vector;
     const speed = e.attributes["speed"] as Speed;
 
-    if (!follow.targetPos) {
-      const tPos = follow.target.get("position") as Vector;
-      const tPosDist = pos.distance(tPos);
+    const tPos = follow.target.get("position") as Vector;
+    const tPosDist = pos.distance(tPos);
 
+    if (!follow.targetPos) {
       if (tPosDist > follow.range) {
         follow.targetPos = tPos.add(
           new Vector().randomDirection().randomScale(0, follow.randomness),
@@ -252,6 +291,37 @@ function updateBeastAggro() {
         minRange: 60,
         maxRange: 75,
       });
+    }
+  }
+}
+
+function updateUnitAggro() {
+  const unitQ = g.state.query({
+    include: ["unit", "position"],
+    exclude: ["attack", "dead"],
+  });
+
+  const enemyQ = g.state.query({
+    include: ["beast", "position"],
+    exclude: ["dead"],
+  });
+
+  if (!enemyQ.entities[0]) return;
+
+  for (const e of unitQ.entities) {
+    const pos = e.attributes["position"] as Vector;
+
+    for (const enemy of enemyQ.entities) {
+      const enemyPos = enemy.entity.get<Vector>("position");
+      if (!enemyPos) continue;
+
+      if (pos.distance(enemyPos) < 175) {
+        e.entity.set<Attack>("attack", {
+          target: enemy.entity,
+          minRange: 60,
+          maxRange: 75,
+        });
+      }
     }
   }
 }
