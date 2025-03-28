@@ -123,3 +123,7 @@ export function clamp(x: number, min: number, max: number) {
 export function randomRange(min: number, max: number) {
   return remap(Math.random(), 0, 1, min, max);
 }
+
+export function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
