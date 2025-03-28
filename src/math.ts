@@ -19,6 +19,10 @@ export class Vector {
     return new Vector(this.x * s, this.y * s);
   }
 
+  negate(): Vector {
+    return new Vector(-this.x, -this.y);
+  }
+
   squaredMagnitude(): number {
     return this.x * this.x + this.y * this.y;
   }
@@ -76,4 +80,8 @@ export function remap(
 
 export function clamp(x: number, min: number, max: number) {
   return Math.max(min, Math.min(x, max));
+}
+
+export function randomRange(min: number, max: number) {
+  return remap(Math.random(), 0, 1, min, max);
 }

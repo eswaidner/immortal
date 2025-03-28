@@ -13,6 +13,9 @@ import { g } from "./globals";
 import { Region, regions } from "./regions";
 import { Zone, zones } from "./zones";
 import { clamp, Vector } from "./math";
+import { Entity } from "./state";
+import { SpriteDepth } from "./main";
+import { Follow, Roam, Speed } from "./npcs";
 
 export class World {
   chunks: Chunk[][] = [];
@@ -139,6 +142,7 @@ class Chunk {
   pos: Vector;
   border: Graphics;
   props: Container[] = [];
+  entIds: number[] = [];
 
   constructor(pos: Vector, world: World) {
     this.world = world;
@@ -177,7 +181,26 @@ class Chunk {
       );
 
       if (tile.zone.name === "Forrest") {
-        spawnTileProp(x, y, "/tree_1.webp", this);
+        spawnTileProp(x, y, 0.65, "/tree_1.webp", this, (e, s) => {
+          //TODO configure
+        });
+      } else if (tile.zone.name === "Arid") {
+        if (Math.random() > 0.99) {
+          spawnTileProp(x, y, 0.35, "/boar.webp", this, (e, s) => {
+            //TODO configure
+            e.set<Roam>("roam", {
+              pos: new Vector(s.x, s.y),
+              range: 200,
+              minWaitTime: 0.75,
+              maxWaitTime: 2,
+              elapsedWait: 0,
+            });
+
+            e.set<Speed>("speed", { speed: 0.03 });
+            e.set("face-direction", {});
+            e.set("beast", {});
+          });
+        }
       }
     }
   }
@@ -185,6 +208,10 @@ class Chunk {
   unload() {
     if (!this.world.loadedChunks.has(this.index())) return;
     this.world.loadedChunks.delete(this.index());
+
+    for (let e of this.entIds) {
+      g.state.deleteEntity(e);
+    }
 
     for (let i = this.props.length; i >= 0; i--) {
       const prop = this.props.pop();
@@ -217,18 +244,33 @@ class Chunk {
   }
 }
 
-async function spawnTileProp(x: number, y: number, url: string, chunk: Chunk) {
-  const tree = new Sprite(await Assets.load(url));
+async function spawnTileProp(
+  x: number,
+  y: number,
+  scale: number,
+  url: string,
+  chunk: Chunk,
+  onSpawn?: (e: Entity, s: Sprite) => void,
+) {
+  const ent = g.state.addEntity();
+
+  const prop = new Sprite(await Assets.load(url));
   const worldPos = chunk.worldPos(x, y);
-  tree.x = worldPos.x;
-  tree.y = worldPos.y;
-  tree.anchor = 0.5;
-  tree.scale = 0.65;
-  tree.zIndex = tree.y + tree.height * 0.5;
+  prop.x = worldPos.x + 0.5 * chunk.world.tileSize;
+  prop.y = worldPos.y + 0.5 * chunk.world.tileSize;
+  prop.anchor = 0.5;
+  prop.scale = scale;
 
-  chunk.props.push(tree as Container);
+  ent.set<SpriteDepth>("sprite-depth", { offset: prop.height * 0.5 });
+  ent.set("container", [prop as Container, scale]);
+  ent.set<Vector>("position", new Vector(prop.x, prop.y));
 
-  g.origin.addChild(tree);
+  chunk.props.push(prop as Container);
+  chunk.entIds.push(ent.id);
+
+  g.origin.addChild(prop);
+
+  if (onSpawn) onSpawn(ent, prop);
 }
 
 // gets pixel data for tile data map
