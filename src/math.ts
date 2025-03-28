@@ -66,6 +66,44 @@ export class Vector {
   randomScale(min: number, max: number): Vector {
     return this.scale(remap(Math.random(), 0, 1, min, max));
   }
+
+  dot(v: Vector): number {
+    return this.x * v.x + this.y * v.y;
+  }
+
+  cross(v: Vector): number {
+    return this.x * v.y - this.y * v.x;
+  }
+
+  // angle between vectors (radians)
+  angle(v: Vector): number {
+    const mag1 = this.magnitude();
+    const mag2 = v.magnitude();
+
+    // Handle zero-length vectors
+    if (mag1 === 0 || mag2 === 0) return NaN;
+
+    const cosine = this.dot(v) / (mag1 * mag2);
+    return Math.acos(cosine);
+  }
+
+  // signed angle between vectors (radians)
+  signedAngle(v: Vector): number {
+    const angle = this.angle(v);
+    if (isNaN(angle)) return NaN;
+
+    return this.cross(v) < 0 ? -angle : angle;
+  }
+}
+
+const degToRadFactor = Math.PI / 180;
+export function deg2Rad(degrees: number): number {
+  return degrees * degToRadFactor;
+}
+
+const radToDegFactor = 180 / Math.PI;
+export function rad2Deg(radians: number): number {
+  return radians * radToDegFactor;
 }
 
 export function remap(

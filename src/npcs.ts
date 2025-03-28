@@ -122,7 +122,7 @@ function updateFollow() {
       );
 
       e.entity.set("position", newPos);
-      e.entity.set("direction", follow.targetPos.sub(pos).normalized());
+      e.entity.set("direction", follow.targetPos.sub(pos).normalize());
 
       const dist = pos.distance(follow.targetPos);
       if (dist < follow.range) follow.targetPos = undefined;

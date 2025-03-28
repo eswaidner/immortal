@@ -8,6 +8,7 @@ import State from "./state";
 import { g, initGlobals, setWorld } from "./globals";
 import { Vector } from "./math";
 import { initNpcs } from "./npcs";
+import { initProjectiles } from "./projectiles";
 
 async function init() {
   initGlobals({
@@ -20,7 +21,10 @@ async function init() {
 
   g.app.stage.addChild(g.origin);
 
+  g.input.init();
+
   g.state.addAttribute<Vector>("direction");
+  g.state.addAttribute<number>("rotation");
   g.state.addAttribute<{}>("face-direction");
   g.state.addAttribute<[Container, number]>("container");
   g.state.addAttribute<[Container, number]>("world-positioned");
@@ -45,6 +49,7 @@ async function init() {
   setWorld(await initWorld());
 
   initCamera();
+  initProjectiles();
   initNpcs();
   const player = await initPlayer();
 
@@ -59,6 +64,7 @@ async function init() {
     updateWorldOriginPosition();
     faceDirection();
     updatePositions();
+    updateRotations();
     updateSpriteDepth();
 
     const playerPos = player.get<Vector>("position")!;
@@ -74,8 +80,10 @@ async function init() {
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}
 FPS: ${g.app.ticker.FPS.toFixed(0)}
+Pointer (Screen): (${g.input.pointerScreenPos.x}, ${g.input.pointerScreenPos.y})
+Pointer (World): (${g.input.pointerWorldPos.x.toFixed(2)}, ${g.input.pointerWorldPos.y.toFixed(2)})
 Pos: (${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)})
-Pos (Converted): ${worldPosConverted.x}, ${worldPosConverted.y}
+Pos (Converted): ${worldPosConverted.x.toFixed(2)}, ${worldPosConverted.y.toFixed(2)}
 Tile: ${tilePos.x}, ${tilePos.y}
 Chunk: ${chunkPos.x}, ${chunkPos.y}
 Region: ${tile.region ? tile.region.name : "undefined"} (${tile.regionId})
@@ -110,6 +118,8 @@ function updateWorldOriginPosition() {
 
   g.origin.x = -camPos.x;
   g.origin.y = -camPos.y;
+
+  g.input.updatePointerWorldPos();
 }
 
 function updatePositions() {
@@ -123,6 +133,19 @@ function updatePositions() {
 
     c.x = pos.x;
     c.y = pos.y;
+  }
+}
+
+function updateRotations() {
+  const q = g.state.query({ include: ["rotation", "container"] });
+
+  for (let i = 0; i < q.entities.length; i++) {
+    const e = q.entities[i];
+
+    const rot = e.attributes["rotation"] as number;
+    const [c, _] = e.attributes["container"] as [Container, number];
+
+    c.rotation = rot;
   }
 }
 
