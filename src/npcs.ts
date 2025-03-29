@@ -18,9 +18,9 @@ export async function initNpcs() {
   g.state.addAttribute<{}>("neutral");
   g.state.addAttribute<{}>("enemy");
 
-  Assets.load("/dude_1.png");
-  Assets.load("/boar.webp");
-  Assets.load("/tree_1.webp");
+  Assets.load("./dude_1.png");
+  Assets.load("./boar.webp");
+  Assets.load("./tree_1.webp");
 
   g.app.ticker.add(() => {
     updateFollow();
@@ -65,7 +65,7 @@ async function spawnUnit(owner: Entity) {
   unit.set<Vector>("direction", new Vector(1, 0));
   unit.set<{}>("face-direction", {});
 
-  const unitTex = (await Assets.load("/dude_1.png")) as Texture;
+  const unitTex = (await Assets.load("./dude_1.png")) as Texture;
   const unitSprite = Sprite.from(unitTex);
   unitSprite.anchor = 0.5;
 
@@ -82,7 +82,7 @@ async function spawnUnit(owner: Entity) {
     elapsedCooldown: 2,
     range: 350,
     attack: (sender, target) => {
-      const arrowTex = g.assets.get("/projectiles/arrow.webp");
+      const arrowTex = g.assets.get("./projectiles/arrow.webp");
       const senderPos = sender.get<Vector>("position");
       const targetPos = target.get<Vector>("position");
 
