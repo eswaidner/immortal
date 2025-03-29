@@ -14,7 +14,7 @@ export default async function initPlayer(): Promise<Entity> {
 
   const scale = 0.45;
 
-  const dudeTex = await Assets.load("/dude_1.png");
+  const dudeTex = await Assets.load("./dude_1.png");
   const dude = new Sprite(dudeTex);
   dude.anchor = 0.5;
   dude.scale = scale;
@@ -68,7 +68,7 @@ export default async function initPlayer(): Promise<Entity> {
     updatePlayerMovement();
   });
 
-  const slashTex = await Assets.load("/projectiles/slash.webp");
+  const slashTex = await Assets.load("./projectiles/slash.webp");
 
   window.addEventListener("click", (e) => {
     if (e.button !== 0) return;
@@ -79,7 +79,7 @@ export default async function initPlayer(): Promise<Entity> {
     slash.anchor = { x: 0, y: 0.5 };
     slash.scale = 0.4;
 
-    const arrow = new Sprite(g.assets.get("/projectiles/arrow.webp"));
+    const arrow = new Sprite(g.assets.get("./projectiles/arrow.webp"));
     arrow.anchor = 0.5;
     arrow.scale = 0.5;
 

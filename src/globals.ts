@@ -18,13 +18,13 @@ export async function initGlobals(globals: Globals) {
   g = globals;
 
   g.assets.set(
-    "/projectiles/slash.webp",
-    await Assets.load("/projectiles/slash.webp"),
+    "./projectiles/slash.webp",
+    await Assets.load("./projectiles/slash.webp"),
   );
 
   g.assets.set(
-    "/projectiles/arrow.webp",
-    await Assets.load("/projectiles/arrow.webp"),
+    "./projectiles/arrow.webp",
+    await Assets.load("./projectiles/arrow.webp"),
   );
 }
 

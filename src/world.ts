@@ -185,7 +185,7 @@ class Chunk {
       );
 
       if (tile.zone.name === "Forrest") {
-        spawnTileProp(x, y, 0.65, "/tree_1.webp", this, (e, s) => {
+        spawnTileProp(x, y, 0.65, "./tree_1.webp", this, (e, s) => {
           s.scale = s.scale.x * randomRange(0.75, 1);
 
           const pos = e.get<Vector>("position")!;
@@ -195,7 +195,7 @@ class Chunk {
         });
       } else if (tile.zone.name === "Arid") {
         if (Math.random() > 0.99) {
-          spawnTileProp(x, y, 0.35, "/boar.webp", this, (e, s) => {
+          spawnTileProp(x, y, 0.35, "./boar.webp", this, (e, s) => {
             e.set<Roam>("roam", {
               pos: new Vector(s.x, s.y),
               range: 200,
@@ -222,7 +222,7 @@ class Chunk {
               elapsedCooldown: 1.5,
               range: 75,
               attack: (sender, target) => {
-                const slashTex = g.assets.get("/projectiles/slash.webp");
+                const slashTex = g.assets.get("./projectiles/slash.webp");
                 const senderPos = sender.get<Vector>("position");
                 const targetPos = target.get<Vector>("position");
 
@@ -329,7 +329,7 @@ async function spawnTileProp(
 
 // gets pixel data for tile data map
 async function getTileDataMapPixels(): Promise<Uint8ClampedArray> {
-  const dataMap = (await Assets.load("/world/data_map.webp")) as Texture;
+  const dataMap = (await Assets.load("./world/data_map.webp")) as Texture;
   const dataPixels = g.app.renderer.extract.pixels({
     resolution: 1,
     target: Sprite.from(dataMap),
@@ -342,11 +342,11 @@ export default async function initWorld(): Promise<World> {
   const world = new World(await getTileDataMapPixels());
 
   //TODO use manifest and bundles instead
-  const biomeMapPromise = Assets.load("/world/biome_map.webp");
-  const surfaceMapPromise = Assets.load("/world/surface_map.webp");
-  const waterMapPromise = Assets.load("/world/water_map.webp");
-  const miscMapPromise = Assets.load("/world/misc_map.webp");
-  const perlinNoisePromise = Assets.load("/world/perlin_noise.png");
+  const biomeMapPromise = Assets.load("./world/biome_map.webp");
+  const surfaceMapPromise = Assets.load("./world/surface_map.webp");
+  const waterMapPromise = Assets.load("./world/water_map.webp");
+  const miscMapPromise = Assets.load("./world/misc_map.webp");
+  const perlinNoisePromise = Assets.load("./world/perlin_noise.png");
 
   //TODO load surface atlas
 
