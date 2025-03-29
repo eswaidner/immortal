@@ -33,7 +33,7 @@ export default async function initPlayer(): Promise<Entity> {
   );
   playerEnt.set<Height>("height", {
     height: 0,
-    shadowOffset: new Vector(2, 12),
+    shadowOffset: new Vector(2, 23),
   });
   playerEnt.set("camera-target", {});
   playerEnt.set<Collider>("collider", {

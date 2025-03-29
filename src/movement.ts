@@ -64,20 +64,11 @@ function updateHeight() {
 
     if (!height.shadow) {
       const shadow = new Graphics()
-        .ellipse(
-          pos.x + height.shadowOffset.x,
-          pos.y + height.shadowOffset.y,
-          20,
-          10,
-        )
+        .ellipse(0, 0, c.width * 0.5, c.width * 0.2)
         .fill(0x202020);
 
-      shadow.pivot = {
-        x: g.app.screen.width * 0.5,
-        y: g.app.screen.height * 0.5,
-      };
       shadow.zIndex = -Infinity;
-      shadow.alpha = 0.2;
+      shadow.alpha = 0.1;
 
       g.origin.addChild(shadow);
 
@@ -88,6 +79,11 @@ function updateHeight() {
     height.shadow.y = pos.y + height.shadowOffset.y;
     c.pivot.y = height.height;
 
-    height.shadow.visible = !e.attributes["dead"];
+    if (e.attributes["dead"]) {
+      height.height = 0;
+      height.shadow.visible = false;
+    } else {
+      height.shadow.visible = true;
+    }
   }
 }

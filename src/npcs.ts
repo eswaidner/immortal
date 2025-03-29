@@ -4,6 +4,7 @@ import { randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { SpriteDepth } from "./main";
 import { fireFlatProjectile } from "./projectiles";
+import { Height } from "./movement";
 
 export async function initNpcs() {
   g.state.addAttribute<Unit>("unit");
@@ -47,6 +48,11 @@ async function spawnUnit(owner: Entity) {
     "position",
     new Vector(g.app.screen.width * 0.5, g.app.screen.height * 0.5).add(offset),
   );
+
+  unit.set<Height>("height", {
+    height: 0,
+    shadowOffset: new Vector(2, 18),
+  });
 
   unit.set<Follow>("follow", {
     target: owner,

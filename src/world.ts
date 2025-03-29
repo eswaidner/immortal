@@ -19,6 +19,7 @@ import { AutoAttack, Follow, Roam, Speed } from "./npcs";
 import { Collider } from "./collisions";
 import { Hitpoints } from "./hitpoints";
 import { fireFlatProjectile } from "./projectiles";
+import { Height } from "./movement";
 
 export class World {
   chunks: Chunk[][] = [];
@@ -207,6 +208,10 @@ class Chunk {
             e.set("face-direction", {});
             e.set("beast", {});
             e.set("enemy", {});
+            e.set<Height>("height", {
+              height: 0,
+              shadowOffset: new Vector(-4, 21),
+            });
             e.set<Collider>("collider", {
               offset: new Vector(),
               radius: s.width * 0.5,
