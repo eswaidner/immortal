@@ -7,8 +7,11 @@ import { SpriteDepth } from "./main";
 import { fireFlatProjectile } from "./projectiles";
 import { Hitpoints, Regenerate } from "./hitpoints";
 import { Collider } from "./collisions";
+import { Movement } from "./movement";
 
 export default async function initPlayer(): Promise<Entity> {
+  g.state.addAttribute<PlayerMovement>("player-movement");
+
   const scale = 0.45;
 
   const dudeTex = await Assets.load("/dude_1.png");
@@ -42,8 +45,22 @@ export default async function initPlayer(): Promise<Entity> {
     elapsedDelay: 0,
   });
 
+  playerEnt.set<Movement>("movement", {
+    force: new Vector(),
+    velocity: new Vector(),
+    decay: 0.15,
+    mass: 1,
+  });
+
+  playerEnt.set<PlayerMovement>("player-movement", {
+    walkForce: 45,
+    dashForce: 1250,
+    dashCooldown: 1,
+    dashCooldownElapsed: 1,
+  });
+
   g.app.ticker.add((tk) => {
-    move(tk, playerEnt);
+    updatePlayerMovement();
   });
 
   const slashTex = await Assets.load("/projectiles/slash.webp");
@@ -84,26 +101,47 @@ export default async function initPlayer(): Promise<Entity> {
   return playerEnt;
 }
 
-function move(tk: Ticker, playerEnt: Entity) {
-  if (playerEnt.get("dead")) return;
+interface PlayerMovement {
+  walkForce: number;
+  dashForce: number;
+  dashCooldown: number;
+  dashCooldownElapsed: number;
+}
 
-  const speed = 6.5;
+function updatePlayerMovement() {
+  const q = g.state.query({
+    include: ["player-movement", "movement"],
+    exclude: ["dead"],
+  });
 
-  let dx = 0;
-  if (g.input.isKeyDown("d")) dx += 1;
-  if (g.input.isKeyDown("a")) dx -= 1;
+  for (const e of q.entities) {
+    const playerMvmt = e.attributes["player-movement"] as PlayerMovement;
+    const movement = e.attributes["movement"] as Movement;
 
-  let dy = 0;
-  if (g.input.isKeyDown("s")) dy += 1;
-  if (g.input.isKeyDown("w")) dy -= 1;
+    // WALK
+    let dx = 0;
+    if (g.input.isKeyDown("d")) dx += 1;
+    if (g.input.isKeyDown("a")) dx -= 1;
 
-  const dir = new Vector(dx, dy).normalize();
-  playerEnt.set("direction", dir);
+    let dy = 0;
+    if (g.input.isKeyDown("s")) dy += 1;
+    if (g.input.isKeyDown("w")) dy -= 1;
 
-  const pos = playerEnt.get("position") as Vector;
+    const walkDir = new Vector(dx, dy).normalize();
+    movement.force = movement.force.add(walkDir.scale(playerMvmt.walkForce));
 
-  pos.x += dir.x * speed * tk.deltaTime;
-  pos.y += dir.y * speed * tk.deltaTime;
+    // DASH
+    if (playerMvmt.dashCooldownElapsed >= playerMvmt.dashCooldown) {
+      if (g.input.wasKeyPressed(" ")) {
+        const dashDir = new Vector(dx, dy).normalize();
+        movement.force = movement.force.add(
+          dashDir.scale(playerMvmt.dashForce),
+        );
 
-  playerEnt.set("position", pos);
+        playerMvmt.dashCooldownElapsed = 0;
+      }
+    } else {
+      playerMvmt.dashCooldownElapsed += g.app.ticker.deltaMS * 0.001;
+    }
+  }
 }

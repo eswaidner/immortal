@@ -7,6 +7,18 @@ export class Vector {
     this.y = y || 0;
   }
 
+  set(x: number, y: number): Vector {
+    this.x = x;
+    this.y = y;
+    return this;
+  }
+
+  copy(v: Vector): Vector {
+    this.x = v.x;
+    this.y = v.y;
+    return this;
+  }
+
   add(v: Vector): Vector {
     return new Vector(this.x + v.x, this.y + v.y);
   }
@@ -45,6 +57,15 @@ export class Vector {
     if (this.x === 0 && this.y === 0) return new Vector();
     const mag = this.magnitude();
     return new Vector(this.x / mag, (this.y /= mag));
+  }
+
+  capMagnitude(max: number): Vector {
+    const sqMag = this.squaredMagnitude();
+    if (sqMag < max * max || max < 0) return new Vector(this.x, this.y);
+
+    const mag = Math.sqrt(sqMag);
+    const deltaFactor = (mag - max) / mag;
+    return this.scale(deltaFactor);
   }
 
   distance(v: Vector): number {

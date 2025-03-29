@@ -11,6 +11,7 @@ import { initNpcs } from "./npcs";
 import { initProjectiles } from "./projectiles";
 import { initCollisions } from "./collisions";
 import { Hitpoints, initHitpoints } from "./hitpoints";
+import { initMovement } from "./movement";
 
 async function init() {
   initGlobals({
@@ -23,8 +24,6 @@ async function init() {
   });
 
   g.app.stage.addChild(g.origin);
-
-  g.input.init();
 
   g.state.addAttribute<Vector>("direction");
   g.state.addAttribute<number>("rotation");
@@ -45,6 +44,8 @@ async function init() {
     resolution: 1 * window.devicePixelRatio,
   });
 
+  g.input.init();
+
   g.app.ticker.maxFPS = 0;
 
   appHolder.appendChild(g.app.canvas);
@@ -54,6 +55,7 @@ async function init() {
   initHitpoints();
   initCollisions();
   initCamera();
+  initMovement();
   initProjectiles();
   initNpcs();
   const player = await initPlayer();
