@@ -41,14 +41,14 @@ export function queryPoint(
   return collisions;
 }
 
-export function queryRay(
-  pos: Vector,
-  dir: Vector,
-  dist: number,
-  radius: number,
-): Collision[] {
-  return [];
-}
+// export function queryRay(
+//   pos: Vector,
+//   dir: Vector,
+//   dist: number,
+//   radius: number,
+// ): Collision[] {
+//   return [];
+// }
 
 export interface Collider {
   offset: Vector;

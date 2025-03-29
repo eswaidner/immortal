@@ -1,6 +1,6 @@
-import { Color, Container } from "pixi.js";
+import { Container } from "pixi.js";
 import { g } from "./globals";
-import { clamp, lerp } from "./math";
+import { clamp } from "./math";
 import { Entity } from "./state";
 
 export function initHitpoints() {

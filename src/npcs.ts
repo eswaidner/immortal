@@ -3,7 +3,7 @@ import { g } from "./globals";
 import { randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { SpriteDepth } from "./main";
-import { fireBallisticProjectile, fireFlatProjectile } from "./projectiles";
+import { fireBallisticProjectile } from "./projectiles";
 import { Height } from "./movement";
 
 export async function initNpcs() {

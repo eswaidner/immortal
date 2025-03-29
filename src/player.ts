@@ -1,10 +1,10 @@
-import { Assets, Container, Sprite, Ticker } from "pixi.js";
+import { Assets, Container, Sprite } from "pixi.js";
 import { Vector } from "./math";
 import { g } from "./globals";
 import { Entity } from "./state";
 import { spawnUnits } from "./npcs";
 import { SpriteDepth } from "./main";
-import { fireBallisticProjectile, fireFlatProjectile } from "./projectiles";
+import { fireBallisticProjectile } from "./projectiles";
 import { Hitpoints, Regenerate } from "./hitpoints";
 import { Collider } from "./collisions";
 import { Gravity, Height, Movement } from "./movement";
@@ -64,7 +64,7 @@ export default async function initPlayer(): Promise<Entity> {
     dashCooldownElapsed: 1,
   });
 
-  g.app.ticker.add((tk) => {
+  g.app.ticker.add(() => {
     updatePlayerMovement();
   });
 
@@ -86,9 +86,9 @@ export default async function initPlayer(): Promise<Entity> {
     const arrowWrapper = new Container();
     arrowWrapper.addChild(arrow);
 
-    const delta = g.input.pointerWorldPos.sub(
-      new Vector(dude.position.x, dude.position.y),
-    );
+    // const delta = g.input.pointerWorldPos.sub(
+    //   new Vector(dude.position.x, dude.position.y),
+    // );
 
     // fireFlatProjectile(
     //   {
@@ -152,7 +152,7 @@ function updatePlayerMovement() {
   for (const e of q.entities) {
     const playerMvmt = e.attributes["player-movement"] as PlayerMovement;
     const movement = e.attributes["movement"] as Movement;
-    const grav = e.attributes["gravity"] as Gravity;
+    // const grav = e.attributes["gravity"] as Gravity;
 
     // WALK
     let dx = 0;

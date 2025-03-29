@@ -67,7 +67,7 @@ async function init() {
 
   g.app.stage.addChild(txt);
 
-  g.app.ticker.add((tk) => {
+  g.app.ticker.add(() => {
     updateWorldOriginPosition();
     faceVelocity();
     updatePositions();

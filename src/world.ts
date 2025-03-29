@@ -15,7 +15,7 @@ import { Zone, zones } from "./zones";
 import { clamp, randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { SpriteDepth } from "./main";
-import { AutoAttack, Follow, Roam, Speed } from "./npcs";
+import { AutoAttack, Roam, Speed } from "./npcs";
 import { Collider } from "./collisions";
 import { Hitpoints } from "./hitpoints";
 import { fireFlatProjectile } from "./projectiles";

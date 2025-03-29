@@ -1,6 +1,6 @@
 import { Container, Graphics } from "pixi.js";
 import { g } from "./globals";
-import { clamp, Vector } from "./math";
+import { Vector } from "./math";
 
 export function initMovement() {
   g.state.addAttribute<Movement>("movement");

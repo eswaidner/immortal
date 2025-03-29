@@ -1,6 +1,6 @@
-import { Container, Graphics, v8_0_0 } from "pixi.js";
+import { Container } from "pixi.js";
 import { g } from "./globals";
-import { clamp, lerp, remap, Vector } from "./math";
+import { lerp, Vector } from "./math";
 import { Entity } from "./state";
 import { Collision, queryPoint } from "./collisions";
 import { damage } from "./hitpoints";
