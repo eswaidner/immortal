@@ -44,7 +44,6 @@ export function fireBallisticProjectile(
 
   const proj = g.state.addEntity();
   proj.set<Vector>("position", new Vector(pos.x, pos.y));
-  proj.set<number>("rotation", 0);
   proj.set<Height>("height", { height: 50, shadowOffset: new Vector(0, 0) });
   proj.set<BallisticProjectile>("ballistic-projectile", p);
 
@@ -121,7 +120,7 @@ function updateFlatProjectiles() {
 
 function updateBallsiticProjectiles() {
   const q = g.state.query({
-    include: ["ballistic-projectile", "position", "rotation", "height"],
+    include: ["ballistic-projectile", "position", "height"],
     optional: ["container"],
   });
 
@@ -129,6 +128,7 @@ function updateBallsiticProjectiles() {
     const proj = e.attributes["ballistic-projectile"] as BallisticProjectile;
     const pos = e.attributes["position"] as Vector;
     const height = e.attributes["height"] as Height;
+    const [c, _] = e.attributes["container"] as [Container, number];
 
     // shorten dest if outside max range
     const d = proj.destination.sub(pos);
@@ -141,38 +141,31 @@ function updateBallsiticProjectiles() {
     const delta = proj.destination.sub(pos);
     const totalDelta = proj.destination.sub(proj.startPos);
 
-    // const dirAngle = delta.signedAngle(new Vector(1, 0));
-    // e.entity.set("rotation", -dirAngle);
-    e.entity.set("rotation", 0);
-
     // move and skip collision check if distance to dest is > min threshold
     const deltaSqMag = delta.squaredMagnitude();
     if (deltaSqMag > 30) {
       pos.copy(pos.add(delta.normalized().scale(proj.speed * dt)));
 
       const totalDeltaSqMag = totalDelta.squaredMagnitude();
-      const t = deltaSqMag / totalDeltaSqMag;
+      const t = 1 - deltaSqMag / totalDeltaSqMag;
 
-      const maxSq = proj.maxRange * proj.maxRange;
-      const adjMaxHeight = clamp(
-        proj.maxHeight * ((totalDeltaSqMag * 2) / maxSq),
-        50,
-        proj.maxHeight,
-      );
+      const rangeFactor = totalDeltaSqMag / (proj.maxRange * proj.maxRange);
 
-      height.height = lerp(
-        lerp(50, adjMaxHeight, t),
-        lerp(adjMaxHeight, 50, t),
-        t,
-      );
+      const parabola = (t: number) => (-t * t + t) * 4 * rangeFactor;
+
+      height.height = lerp(10, proj.maxHeight, parabola(t));
 
       const startAngle = new Vector(1, 0).signedAngle(
-        new Vector(1, adjMaxHeight),
+        new Vector(1, proj.maxHeight * parabola(0.5) * 0.01),
       );
-      const angleAdj = lerp(lerp(-startAngle, 0, t), lerp(0, startAngle, t), t);
+      let angleAdj = lerp(startAngle, -startAngle, t);
+      angleAdj *= delta.normalized().dot(new Vector(1, 0));
 
-      const rot = e.entity.get<number>("rotation")!;
-      e.entity.set("rotation", rot - angleAdj);
+      // set arrow visual rot
+      if (c.children[0]) {
+        const dirAngle = delta.normalized().signedAngle(new Vector(1, 0));
+        c.children[0].rotation = dirAngle - angleAdj;
+      }
 
       continue;
     }
@@ -192,7 +185,6 @@ function updateBallsiticProjectiles() {
     }
 
     // destroy projectile
-    const [c, _] = e.attributes["container"];
     if (c) c.destroy();
     g.state.deleteEntity(e.entity.id);
   }

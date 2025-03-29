@@ -83,48 +83,51 @@ export default async function initPlayer(): Promise<Entity> {
     arrow.anchor = 0.5;
     arrow.scale = 0.5;
 
+    const arrowWrapper = new Container();
+    arrowWrapper.addChild(arrow);
+
     const delta = g.input.pointerWorldPos.sub(
       new Vector(dude.position.x, dude.position.y),
     );
 
-    fireFlatProjectile(
-      {
-        sender: playerEnt,
-        speed: 10,
-        direction: delta.normalized(),
-        range: 75,
-        hitRadius: 75,
-        maxHits: 1,
-        damage: 10,
-        knockback: new Vector(100, 1),
-        hits: 0,
-        distanceTraveled: 0,
-        hitExclude: ["friend"],
-      },
-      new Vector(dude.position.x, dude.position.y),
-      slash as Container,
-    );
-
-    // const dest = new Vector().copy(g.input.pointerWorldPos);
-    // const startPos = new Vector(dude.position.x, dude.position.y);
-    // fireBallisticProjectile(
+    // fireFlatProjectile(
     //   {
-    //     maxRange: 550,
-    //     maxHeight: 550,
-    //     startPos: startPos,
-    //     destination: dest,
     //     sender: playerEnt,
-    //     speed: 17,
-    //     hitRadius: 15,
+    //     speed: 10,
+    //     direction: delta.normalized(),
+    //     range: 75,
+    //     hitRadius: 75,
     //     maxHits: 1,
-    //     damage: 27,
+    //     damage: 10,
     //     knockback: new Vector(100, 1),
     //     hits: 0,
+    //     distanceTraveled: 0,
     //     hitExclude: ["friend"],
     //   },
-    //   startPos,
-    //   arrow as Container,
+    //   new Vector(dude.position.x, dude.position.y),
+    //   slash as Container,
     // );
+
+    const dest = new Vector().copy(g.input.pointerWorldPos);
+    const startPos = new Vector(dude.position.x, dude.position.y);
+    fireBallisticProjectile(
+      {
+        maxRange: 550,
+        maxHeight: 550,
+        startPos: startPos,
+        destination: dest,
+        sender: playerEnt,
+        speed: 10,
+        hitRadius: 15,
+        maxHits: 1,
+        damage: 27,
+        knockback: new Vector(100, 1),
+        hits: 0,
+        hitExclude: ["friend"],
+      },
+      startPos,
+      arrowWrapper as Container,
+    );
   });
 
   spawnUnits(playerEnt, 5);

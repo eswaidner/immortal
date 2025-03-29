@@ -92,6 +92,9 @@ async function spawnUnit(owner: Entity) {
       arrow.anchor = { x: 0.5, y: 0.5 };
       arrow.scale = 0.45;
 
+      const arrowWrapper = new Container();
+      arrowWrapper.addChild(arrow);
+
       const dest = new Vector().copy(targetPos);
       const startPos = new Vector(senderPos.x, senderPos.y);
       fireBallisticProjectile(
@@ -110,7 +113,7 @@ async function spawnUnit(owner: Entity) {
           hitExclude: ["friend"],
         },
         startPos,
-        arrow as Container,
+        arrowWrapper as Container,
       );
     },
   });

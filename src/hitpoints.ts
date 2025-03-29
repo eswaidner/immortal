@@ -1,4 +1,4 @@
-import { Container } from "pixi.js";
+import { Color, Container } from "pixi.js";
 import { g } from "./globals";
 import { clamp, lerp } from "./math";
 import { Entity } from "./state";
@@ -115,8 +115,6 @@ function updateDamageFlash() {
 
     const dt = g.app.ticker.deltaMS * 0.001;
     flash.elapsed += dt;
-
-    if (c) c.tint = lerp(c.tint, 0xffffff, dt * 15);
 
     if (flash.elapsed >= flash.duration) {
       e.entity.delete("damage-flash");
