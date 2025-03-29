@@ -4,7 +4,6 @@ import Input from "./input";
 import initWorld, { World } from "./world";
 import initPlayer from "./player";
 import initCamera from "./camera";
-import State from "./state";
 import { g, initGlobals, setWorld } from "./globals";
 import { Vector } from "./math";
 import { initNpcs } from "./npcs";
@@ -17,7 +16,6 @@ async function init() {
   initGlobals({
     app: new Application(),
     origin: new Container(),
-    state: new State(),
     input: new Input(),
     world: undefined as unknown as World, // temp
     assets: new Map(), //temp
@@ -25,13 +23,13 @@ async function init() {
 
   g.app.stage.addChild(g.origin);
 
-  g.state.addAttribute<Vector>("direction");
-  g.state.addAttribute<number>("rotation");
-  g.state.addAttribute<{}>("face-direction");
-  g.state.addAttribute<[Container, number]>("container");
-  g.state.addAttribute<[Container, number]>("world-positioned");
-  g.state.addAttribute<{}>("player");
-  g.state.addAttribute<SpriteDepth>("sprite-depth");
+  g.state.defineAttribute<Vector>("direction");
+  g.state.defineAttribute<number>("rotation");
+  g.state.defineAttribute<{}>("face-direction");
+  g.state.defineAttribute<[Container, number]>("container");
+  g.state.defineAttribute<[Container, number]>("world-positioned");
+  g.state.defineAttribute<{}>("player");
+  g.state.defineAttribute<SpriteDepth>("sprite-depth");
 
   const appHolder = document.querySelector("#app")!;
 
@@ -74,7 +72,7 @@ async function init() {
     updateRotations();
     updateSpriteDepth();
 
-    const playerPos = player.get<Vector>("position")!;
+    const playerPos = player.getAttribute<Vector>("position")!;
 
     const tilePos = g.world.worldToTile(playerPos.x, playerPos.y);
     const tile = g.world.getTileData(tilePos.x, tilePos.y);
@@ -84,7 +82,7 @@ async function init() {
       tilePos.y - chunkPos.y * g.world.chunkSize,
     );
 
-    const playerHp = player.get<Hitpoints>("hitpoints")!;
+    const playerHp = player.getAttribute<Hitpoints>("hitpoints")!;
 
     txt.text = `Immortal
 Resolution: ${g.app.canvas.width}x${g.app.canvas.height}

@@ -1,10 +1,8 @@
 import { Application, Assets, Container } from "pixi.js";
 import Input from "./input";
-import State from "./state";
 import { World } from "./world";
 
 interface Globals {
-  state: State;
   app: Application;
   origin: Container;
   input: Input;

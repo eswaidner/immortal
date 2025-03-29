@@ -10,7 +10,7 @@ import { Collider } from "./collisions";
 import { Gravity, Height, Movement } from "./movement";
 
 export default async function initPlayer(): Promise<Entity> {
-  g.state.addAttribute<PlayerMovement>("player-movement");
+  g.state.defineAttribute<PlayerMovement>("player-movement");
 
   const scale = 0.45;
 
@@ -20,44 +20,46 @@ export default async function initPlayer(): Promise<Entity> {
   dude.scale = scale;
   g.origin.addChild(dude);
 
-  const playerEnt = g.state.addEntity();
-  playerEnt.set("player", {});
-  playerEnt.set("friend", {});
-  playerEnt.set("direction", new Vector());
-  playerEnt.set("face-direction", {});
-  playerEnt.set("container", [dude as Container, scale]);
-  playerEnt.set<SpriteDepth>("sprite-depth", { offset: dude.height * 0.5 });
-  playerEnt.set(
+  const playerEnt = g.state.createEntity();
+  playerEnt.setAttribute("player", {});
+  playerEnt.setAttribute("friend", {});
+  playerEnt.setAttribute("direction", new Vector());
+  playerEnt.setAttribute("face-direction", {});
+  playerEnt.setAttribute("container", [dude as Container, scale]);
+  playerEnt.setAttribute<SpriteDepth>("sprite-depth", {
+    offset: dude.height * 0.5,
+  });
+  playerEnt.setAttribute(
     "position",
     new Vector(g.app.screen.width * 0.5, g.app.screen.height * 0.5),
   );
-  playerEnt.set<Height>("height", {
+  playerEnt.setAttribute<Height>("height", {
     height: 0,
     shadowOffset: new Vector(2, 23),
   });
-  playerEnt.set<Gravity>("gravity", { velocity: 0, decay: 2 });
-  playerEnt.set("camera-target", {});
-  playerEnt.set<Collider>("collider", {
+  playerEnt.setAttribute<Gravity>("gravity", { velocity: 0, decay: 2 });
+  playerEnt.setAttribute("camera-target", {});
+  playerEnt.setAttribute<Collider>("collider", {
     offset: new Vector(),
     radius: dude.x * 0.5,
   });
 
-  playerEnt.set<Hitpoints>("hitpoints", { hp: 100, maxHp: 100 });
-  playerEnt.set<Regenerate>("regenerate", {
+  playerEnt.setAttribute<Hitpoints>("hitpoints", { hp: 100, maxHp: 100 });
+  playerEnt.setAttribute<Regenerate>("regenerate", {
     rate: 5,
     maxRegenPercent: 0.75,
     delay: 5,
     elapsedDelay: 0,
   });
 
-  playerEnt.set<Movement>("movement", {
+  playerEnt.setAttribute<Movement>("movement", {
     force: new Vector(),
     velocity: new Vector(),
     decay: 0.15,
     mass: 1,
   });
 
-  playerEnt.set<PlayerMovement>("player-movement", {
+  playerEnt.setAttribute<PlayerMovement>("player-movement", {
     walkForce: 45,
     dashForce: 1250,
     dashCooldown: 1,
@@ -72,8 +74,8 @@ export default async function initPlayer(): Promise<Entity> {
 
   window.addEventListener("click", (e) => {
     if (e.button !== 0) return;
-    if (playerEnt.get("dead")) return;
-    if (playerEnt.get("in-air")) return;
+    if (playerEnt.getAttribute("dead")) return;
+    if (playerEnt.getAttribute("in-air")) return;
 
     const slash = new Sprite(slashTex);
     slash.anchor = { x: 0, y: 0.5 };

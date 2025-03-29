@@ -188,7 +188,7 @@ class Chunk {
         spawnTileProp(x, y, 0.65, "./tree_1.webp", this, (e, s) => {
           s.scale = s.scale.x * randomRange(0.75, 1);
 
-          const pos = e.get<Vector>("position")!;
+          const pos = e.getAttribute<Vector>("position")!;
 
           pos.x += randomRange(-1, 1) * 10;
           pos.y += randomRange(-1, 1) * 10;
@@ -196,7 +196,7 @@ class Chunk {
       } else if (tile.zone.name === "Arid") {
         if (Math.random() > 0.99) {
           spawnTileProp(x, y, 0.35, "./boar.webp", this, (e, s) => {
-            e.set<Roam>("roam", {
+            e.setAttribute<Roam>("roam", {
               pos: new Vector(s.x, s.y),
               range: 200,
               minWaitTime: 0.75,
@@ -204,27 +204,27 @@ class Chunk {
               elapsedWait: 0,
             });
 
-            e.set<Speed>("speed", { speed: 0.03 });
-            e.set("face-direction", {});
-            e.set("beast", {});
-            e.set("enemy", {});
-            e.set<Height>("height", {
+            e.setAttribute<Speed>("speed", { speed: 0.03 });
+            e.setAttribute("face-direction", {});
+            e.setAttribute("beast", {});
+            e.setAttribute("enemy", {});
+            e.setAttribute<Height>("height", {
               height: 0,
               shadowOffset: new Vector(-4, 21),
             });
-            e.set<Collider>("collider", {
+            e.setAttribute<Collider>("collider", {
               offset: new Vector(),
               radius: s.width * 0.5,
             });
-            e.set<Hitpoints>("hitpoints", { hp: 50, maxHp: 50 });
-            e.set<AutoAttack>("auto-attack", {
+            e.setAttribute<Hitpoints>("hitpoints", { hp: 50, maxHp: 50 });
+            e.setAttribute<AutoAttack>("auto-attack", {
               cooldown: 1.5,
               elapsedCooldown: 1.5,
               range: 75,
               attack: (sender, target) => {
                 const slashTex = g.assets.get("./projectiles/slash.webp");
-                const senderPos = sender.get<Vector>("position");
-                const targetPos = target.get<Vector>("position");
+                const senderPos = sender.getAttribute<Vector>("position");
+                const targetPos = target.getAttribute<Vector>("position");
 
                 if (!slashTex || !senderPos || !targetPos) return;
 
@@ -306,7 +306,7 @@ async function spawnTileProp(
   chunk: Chunk,
   onSpawn?: (e: Entity, s: Sprite) => void,
 ) {
-  const ent = g.state.addEntity();
+  const ent = g.state.createEntity();
 
   const prop = new Sprite(await Assets.load(url));
   const worldPos = chunk.worldPos(x, y);
@@ -315,9 +315,9 @@ async function spawnTileProp(
   prop.anchor = 0.5;
   prop.scale = scale;
 
-  ent.set<SpriteDepth>("sprite-depth", { offset: prop.height * 0.5 });
-  ent.set("container", [prop as Container, scale]);
-  ent.set<Vector>("position", new Vector(prop.x, prop.y));
+  ent.setAttribute<SpriteDepth>("sprite-depth", { offset: prop.height * 0.5 });
+  ent.setAttribute("container", [prop as Container, scale]);
+  ent.setAttribute<Vector>("position", new Vector(prop.x, prop.y));
 
   chunk.props.push(prop as Container);
   chunk.entIds.push(ent.id);

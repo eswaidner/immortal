@@ -3,11 +3,11 @@ import { g } from "./globals";
 import { Vector } from "./math";
 
 export function initMovement() {
-  g.state.addAttribute<Movement>("movement");
-  g.state.addAttribute("in-air");
-  g.state.addAttribute<Gravity>("gravity");
+  g.state.defineAttribute<Movement>("movement");
+  g.state.defineAttribute("in-air");
+  g.state.defineAttribute<Gravity>("gravity");
 
-  g.state.addAttribute<Height>("height", (h) => {
+  g.state.defineAttribute<Height>("height", (h) => {
     if (h.shadow) h.shadow.destroy();
   });
 

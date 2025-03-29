@@ -1,78 +1,81 @@
 export default class State {
-  nextId: number = 1;
-  entities: Set<number> = new Set();
-  attributes: Record<string, object> = {};
+  static nextId: number = 1;
+  static entities: Set<number> = new Set();
+  static namedEntities: Map<string, Entity> = new Map();
+  static attributes: Map<object, object> = new Map();
 
-  getId() {
-    //TODO recycle ids?
-    const id = this.nextId;
-    this.nextId++;
-    return id;
+  static defineAttribute<T extends object>(
+    key: object,
+    onAdd?: Callback<T>,
+    onRemove?: Callback<T>,
+  ) {
+    const attr = new Attribute<T>(onAdd, onRemove);
+    State.attributes.set(key, attr);
   }
 
-  addEntity(): Entity {
-    const ent = new Entity(this.getId(), this);
-    this.entities.add(ent.id);
+  //TODO move to Entity constructor?
+  static createEntity(name?: string): Entity {
+    //TODO recycle ids
+    const ent = new Entity(State.nextId);
+    State.nextId++;
+
+    State.entities.add(ent.id);
+    if (name) {
+      if (State.namedEntities.has(name)) {
+        console.log(
+          `WARNING: entity with name '${name}' already exists, overwriting`,
+        );
+      }
+
+      State.namedEntities.set(name, ent);
+    }
+
     return ent;
   }
 
-  deleteEntity(id: number) {
-    this.entities.delete(id);
+  static deleteEntity(id: number) {
+    State.entities.delete(id);
 
-    for (const c of Object.values(this.attributes)) {
-      (c as Attribute<any>).deleteInstance(id);
+    for (const c of Object.values(State.attributes)) {
+      c.deleteInstance(id);
     }
   }
 
-  addAttribute<T>(name: string, cleanup?: CleanupFn<T>): Attribute<T> {
-    const attr = new Attribute<T>(name, cleanup);
-    this.attributes[name] = attr;
-    return attr;
+  static getEntity(id: number): Entity | undefined {
+    return State.entities.has(id) !== undefined ? new Entity(id) : undefined;
   }
 
-  getEntity(id: number): Entity | undefined {
-    return this.entities.has(id) !== undefined
-      ? new Entity(id, this)
-      : undefined;
-  }
-
-  getAttribute<T>(name: string): Attribute<T> {
-    const attr = this.attributes[name];
-    if (!attr) throw new Error(`undefined attribute '${name}'`);
+  static getAttribute<T extends object>(key: object): Attribute<T> {
+    const attr = State.attributes.get(key);
+    if (!attr) throw new Error(`undefined attribute '${key}'`);
 
     return attr as Attribute<T>;
   }
 
-  query(q: Query): QueryResult {
-    const base = this.getAttribute(q.include[0]);
-    const result: QueryResult = { entities: [] };
+  static query(q: Query): Entity[] {
+    const base = State.getAttribute(q.include[0]);
+    const entities: Entity[] = [];
 
     // check all instances of base attribute for matches
-    for (let [entId, baseVal] of base.instances.entries()) {
-      const ent: EntityView = {
-        entity: this.getEntity(entId)!,
-        attributes: { [base.name]: baseVal },
-      };
-
+    for (let entId of base.instances.keys()) {
+      const ent = State.getEntity(entId)!;
       let match = true;
 
       // reject entity if a required attribute is missing
       for (let j = 1; j < q.include.length; j += 1) {
-        const attr = this.getAttribute(q.include[j]);
+        const attr = State.getAttribute(q.include[j]);
 
         const val = attr.instances.get(entId);
         if (val === undefined) {
           match = false;
           break;
         }
-
-        ent.attributes[attr.name] = val;
       }
 
       // reject entity if an excluded attribute is set
       if (match && q.exclude) {
         for (let j = 0; j < q.exclude.length; j += 1) {
-          const attr = this.getAttribute(q.exclude[j]);
+          const attr = State.getAttribute(q.exclude[j]);
 
           if (attr.instances.get(entId) !== undefined) {
             match = false;
@@ -81,97 +84,98 @@ export default class State {
         }
       }
 
-      // check for optional attributes
-      if (match && q.optional) {
-        for (let j = 0; j < q.optional.length; j += 1) {
-          const attr = this.getAttribute(q.optional[j]);
-
-          const val = attr.instances.get(entId);
-          ent.attributes[attr.name] = val;
-        }
-      }
-
       // add values to query result
-      if (match) result.entities.push(ent);
+      if (match) entities.push(ent);
     }
 
-    return result;
+    return entities;
+  }
+
+  static async init() {
+    State.defineAttribute(System);
+  }
+
+  static update(deltaTime: number) {
+    // update systems
+    const sysAttr = State.getAttribute<System>(System);
+    for (const sys of sysAttr.instances.values()) {
+      sys.update(deltaTime);
+    }
   }
 }
 
-interface Query {
-  include: string[];
-  exclude?: string[];
-  optional?: string[];
+type Callback<T extends object> = (a: T) => void;
+
+class Attribute<T extends object> {
+  instances: Map<number, T> = new Map();
+  onAdd?: Callback<T>;
+  onRemove?: Callback<T>;
+
+  constructor(onAdd?: Callback<T>, onRemove?: Callback<T>) {
+    this.onAdd = onAdd;
+    this.onRemove = onRemove;
+  }
+
+  removeInstance(entId: number) {
+    if (!this.instances.has(entId)) return;
+
+    if (this.onRemove) this.onRemove(this.instances.get(entId)!);
+    this.instances.delete(entId);
+  }
 }
 
-interface EntityView {
-  entity: Entity;
-  attributes: Record<string, any>;
-}
-
-interface QueryResult {
-  entities: EntityView[];
+export interface Query {
+  include: object[];
+  exclude?: object[];
 }
 
 export class Entity {
   id: number;
-  state: State;
 
-  constructor(id: number, world: State) {
+  constructor(id: number) {
     this.id = id;
-    this.state = world;
   }
 
-  get<T>(name: string): T | undefined {
-    const attr = this.state.getAttribute<T>(name);
+  getAttribute<T extends object>(key: object): T | undefined {
+    const attr = State.getAttribute<T>(key);
     return attr.instances.get(this.id);
   }
 
-  set<T>(name: string, value: T) {
-    const attr = this.state.getAttribute<T>(name);
+  setAttribute<T extends object>(key: object, value: T) {
+    const attr = State.getAttribute<T>(key);
     attr.instances.set(this.id, value);
-    attr.change();
   }
 
-  delete(name: string) {
-    const attr = this.state.getAttribute(name);
-    attr.deleteInstance(this.id);
-    attr.change();
+  removeAttribute(key: object) {
+    const attr = State.getAttribute(key);
+    attr.removeInstance(this.id);
   }
 }
 
-type CleanupFn<T> = (a: T) => void;
+export class System {
+  interval: number = 0;
+  elapsedInterval: number = 0;
+  query: Query;
+  fn: (e: Entity) => void;
 
-export class Attribute<T> {
-  name: string;
-  instances: Map<number, T> = new Map();
-  cleanup?: CleanupFn<T>;
+  constructor(q: Query, fn: (e: Entity) => void, frequency?: number) {
+    this.query = q;
+    this.fn = fn;
 
-  // hooks
-  changeEffects: Map<object, Effect<T>> = new Map();
-
-  constructor(name: string, cleanup?: CleanupFn<T>) {
-    this.name = name;
-    this.cleanup = cleanup;
+    if (frequency) this.interval = 1 / frequency;
   }
 
-  deleteInstance(entId: number) {
-    if (!this.instances.has(entId)) return;
-
-    if (this.cleanup) this.cleanup(this.instances.get(entId)!);
-    this.instances.delete(entId);
+  update(dt: number) {
+    this.elapsedInterval += dt;
+    if (this.elapsedInterval > this.interval) this.execute();
   }
 
-  onChange(key: object, effect: Effect<T>) {
-    this.changeEffects.set(key, effect);
-  }
+  execute() {
+    // invoke fn for each entity returned by query
+    const q = State.query(this.query);
+    const len = q.length;
+    for (let i = 0; i < len; i++) this.fn(q[i]);
 
-  change() {
-    for (const e of this.changeEffects.values()) {
-      e(this);
-    }
+    this.elapsedInterval = 0;
   }
 }
-
-export type Effect<T> = (attr: Attribute<T>) => void;

@@ -2,13 +2,13 @@ import { g } from "./globals";
 import { Vector } from "./math";
 
 export default function initCamera() {
-  g.state.addAttribute<Vector>("position");
-  g.state.addAttribute<{}>("camera");
-  g.state.addAttribute<{}>("camera-target");
+  g.state.defineAttribute<Vector>("position");
+  g.state.defineAttribute<{}>("camera");
+  g.state.defineAttribute<{}>("camera-target");
 
-  const cam = g.state.addEntity();
-  cam.set("position", new Vector());
-  cam.set("camera", {});
+  const cam = g.state.createEntity();
+  cam.setAttribute("position", new Vector());
+  cam.setAttribute("camera", {});
 
   g.app.ticker.add(() => {
     const q = g.state.query({ include: ["camera-target", "position"] });
@@ -16,7 +16,7 @@ export default function initCamera() {
 
     const targetPos = q.entities[0].attributes["position"] as Vector;
 
-    const currentPos = cam.get<Vector>("position")!;
+    const currentPos = cam.getAttribute<Vector>("position")!;
 
     const pos = new Vector(
       targetPos.x - g.app.screen.width * 0.5,
@@ -27,7 +27,7 @@ export default function initCamera() {
 
     if (sqDist > 5) {
       const lerped = currentPos.lerp(pos, 0.1);
-      cam.set("position", lerped);
+      cam.setAttribute("position", lerped);
     }
   });
 }

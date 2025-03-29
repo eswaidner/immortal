@@ -8,8 +8,8 @@ import { Gravity, Height, Movement } from "./movement";
 import { Attack } from "./npcs";
 
 export async function initProjectiles() {
-  g.state.addAttribute<FlatProjectile>("flat-projectile");
-  g.state.addAttribute<BallisticProjectile>("ballistic-projectile");
+  g.state.defineAttribute<FlatProjectile>("flat-projectile");
+  g.state.defineAttribute<BallisticProjectile>("ballistic-projectile");
 
   g.app.ticker.add(() => {
     updateFlatProjectiles();
@@ -24,12 +24,15 @@ export function fireFlatProjectile(
 ) {
   const dirAngle = -p.direction.signedAngle(new Vector(1, 0));
 
-  const proj = g.state.addEntity();
-  proj.set<Vector>("position", new Vector(pos.x, pos.y));
-  proj.set<number>("rotation", dirAngle);
-  proj.set<FlatProjectile>("flat-projectile", p);
+  const proj = g.state.createEntity();
+  proj.setAttribute<Vector>("position", new Vector(pos.x, pos.y));
+  proj.setAttribute<number>("rotation", dirAngle);
+  proj.setAttribute<FlatProjectile>("flat-projectile", p);
 
-  proj.set<[Container, number]>("container", [container, container.scale.x]);
+  proj.setAttribute<[Container, number]>("container", [
+    container,
+    container.scale.x,
+  ]);
 
   g.origin.addChild(container);
 }
@@ -42,12 +45,18 @@ export function fireBallisticProjectile(
   // const dir = p.destination.sub(pos).normalize();
   // const dirAngle = -dir.signedAngle(new Vector(1, 0));
 
-  const proj = g.state.addEntity();
-  proj.set<Vector>("position", new Vector(pos.x, pos.y));
-  proj.set<Height>("height", { height: 50, shadowOffset: new Vector(0, 0) });
-  proj.set<BallisticProjectile>("ballistic-projectile", p);
+  const proj = g.state.createEntity();
+  proj.setAttribute<Vector>("position", new Vector(pos.x, pos.y));
+  proj.setAttribute<Height>("height", {
+    height: 50,
+    shadowOffset: new Vector(0, 0),
+  });
+  proj.setAttribute<BallisticProjectile>("ballistic-projectile", p);
 
-  proj.set<[Container, number]>("container", [container, container.scale.x]);
+  proj.setAttribute<[Container, number]>("container", [
+    container,
+    container.scale.x,
+  ]);
 
   g.origin.addChild(container);
 }
@@ -194,19 +203,19 @@ function handleHit(proj: Projectile, hitDir: Vector, c: Collision) {
   damage(proj.damage, c.ent);
 
   // knockback
-  const movement = c.ent.get<Movement>("movement");
+  const movement = c.ent.getAttribute<Movement>("movement");
   if (movement) {
     movement.force = movement.force.add(hitDir.scale(proj.knockback.x));
   }
 
   // knockup
-  const grav = c.ent.get<Gravity>("gravity");
+  const grav = c.ent.getAttribute<Gravity>("gravity");
   if (grav) grav.velocity += proj.knockback.y;
 
   // aggro enemy
-  if (c.ent.get("enemy")) {
-    if (!c.ent.get<Attack>("attack")) {
-      c.ent.set<Attack>("attack", {
+  if (c.ent.getAttribute("enemy")) {
+    if (!c.ent.getAttribute<Attack>("attack")) {
+      c.ent.setAttribute<Attack>("attack", {
         target: proj.sender,
         minRange: 25,
         maxRange: 75,

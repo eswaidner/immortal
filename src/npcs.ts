@@ -7,16 +7,16 @@ import { fireBallisticProjectile } from "./projectiles";
 import { Height } from "./movement";
 
 export async function initNpcs() {
-  g.state.addAttribute<Unit>("unit");
-  g.state.addAttribute<{}>("beast");
-  g.state.addAttribute<Attack>("attack");
-  g.state.addAttribute<Follow>("follow");
-  g.state.addAttribute<Roam>("roam");
-  g.state.addAttribute<AutoAttack>("auto-attack");
-  g.state.addAttribute<Speed>("speed");
-  g.state.addAttribute<{}>("friend");
-  g.state.addAttribute<{}>("neutral");
-  g.state.addAttribute<{}>("enemy");
+  g.state.defineAttribute<Unit>("unit");
+  g.state.defineAttribute<{}>("beast");
+  g.state.defineAttribute<Attack>("attack");
+  g.state.defineAttribute<Follow>("follow");
+  g.state.defineAttribute<Roam>("roam");
+  g.state.defineAttribute<AutoAttack>("auto-attack");
+  g.state.defineAttribute<Speed>("speed");
+  g.state.defineAttribute<{}>("friend");
+  g.state.defineAttribute<{}>("neutral");
+  g.state.defineAttribute<{}>("enemy");
 
   Assets.load("./dude_1.png");
   Assets.load("./boar.webp");
@@ -41,29 +41,29 @@ export function spawnUnits(owner: Entity, qty: number) {
 async function spawnUnit(owner: Entity) {
   const offset = new Vector().randomDirection().randomScale(50, 100);
 
-  const unit = g.state.addEntity();
-  unit.set<Unit>("unit", { owner });
-  unit.set("friend", {});
-  unit.set<Vector>(
+  const unit = g.state.createEntity();
+  unit.setAttribute<Unit>("unit", { owner });
+  unit.setAttribute("friend", {});
+  unit.setAttribute<Vector>(
     "position",
     new Vector(g.app.screen.width * 0.5, g.app.screen.height * 0.5).add(offset),
   );
 
-  unit.set<Height>("height", {
+  unit.setAttribute<Height>("height", {
     height: 0,
     shadowOffset: new Vector(2, 18),
   });
 
-  unit.set<Follow>("follow", {
+  unit.setAttribute<Follow>("follow", {
     target: owner,
     range: 200,
     randomness: 150,
   });
 
-  unit.set<Speed>("speed", { speed: 0.03 + Math.random() * -0.015 });
+  unit.setAttribute<Speed>("speed", { speed: 0.03 + Math.random() * -0.015 });
 
-  unit.set<Vector>("direction", new Vector(1, 0));
-  unit.set<{}>("face-direction", {});
+  unit.setAttribute<Vector>("direction", new Vector(1, 0));
+  unit.setAttribute<{}>("face-direction", {});
 
   const unitTex = (await Assets.load("./dude_1.png")) as Texture;
   const unitSprite = Sprite.from(unitTex);
@@ -72,19 +72,21 @@ async function spawnUnit(owner: Entity) {
   const scale = 0.35;
   unitSprite.scale = scale;
 
-  unit.set<SpriteDepth>("sprite-depth", { offset: unitSprite.height * 0.5 });
+  unit.setAttribute<SpriteDepth>("sprite-depth", {
+    offset: unitSprite.height * 0.5,
+  });
 
   g.origin.addChild(unitSprite);
-  unit.set<[Container, number]>("container", [unitSprite, scale]);
+  unit.setAttribute<[Container, number]>("container", [unitSprite, scale]);
 
-  unit.set<AutoAttack>("auto-attack", {
+  unit.setAttribute<AutoAttack>("auto-attack", {
     cooldown: 2,
     elapsedCooldown: 2,
     range: 350,
     attack: (sender, target) => {
       const arrowTex = g.assets.get("./projectiles/arrow.webp");
-      const senderPos = sender.get<Vector>("position");
-      const targetPos = target.get<Vector>("position");
+      const senderPos = sender.getAttribute<Vector>("position");
+      const targetPos = target.getAttribute<Vector>("position");
 
       if (!arrowTex || !senderPos || !targetPos) return;
 
@@ -169,7 +171,7 @@ function updateFollow() {
     const pos = e.attributes["position"] as Vector;
     const speed = e.attributes["speed"] as Speed;
 
-    const tPos = follow.target.get("position") as Vector;
+    const tPos = follow.target.getAttribute("position") as Vector;
     const tPosDist = pos.distance(tPos);
 
     if (!follow.targetPos) {
@@ -248,13 +250,13 @@ function updateAttack() {
     const speed = e.attributes["speed"] as Speed;
 
     // break aggro target died
-    if (attack.target.get("dead")) {
+    if (attack.target.getAttribute("dead")) {
       e.entity.delete("attack");
       continue;
     }
 
     // target must have position attribute
-    const targetPos = attack.target.get<Vector>("position");
+    const targetPos = attack.target.getAttribute<Vector>("position");
     if (targetPos === undefined) continue;
 
     const targetDelta = targetPos.sub(pos);
@@ -351,7 +353,7 @@ function updateAutoAttack() {
     auto.elapsedCooldown += g.app.ticker.deltaMS * 0.001;
     if (auto.elapsedCooldown < auto.cooldown) continue;
 
-    const targetPos = attack.target.get<Vector>("position");
+    const targetPos = attack.target.getAttribute<Vector>("position");
     if (!targetPos) continue;
 
     const delta = targetPos.sub(pos);

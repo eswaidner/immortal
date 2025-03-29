@@ -4,11 +4,11 @@ import { clamp } from "./math";
 import { Entity } from "./state";
 
 export function initHitpoints() {
-  g.state.addAttribute<Hitpoints>("hitpoints");
-  g.state.addAttribute<Regenerate>("regenerate");
-  g.state.addAttribute<Invulnerable>("invulnerable");
-  g.state.addAttribute<DamageFlash>("damage-flash");
-  g.state.addAttribute("dead");
+  g.state.defineAttribute<Hitpoints>("hitpoints");
+  g.state.defineAttribute<Regenerate>("regenerate");
+  g.state.defineAttribute<Invulnerable>("invulnerable");
+  g.state.defineAttribute<DamageFlash>("damage-flash");
+  g.state.defineAttribute("dead");
 
   g.app.ticker.add(() => {
     updateHitpoints();
@@ -41,14 +41,14 @@ export interface DamageFlash {
 }
 
 export function damage(damage: number, ent: Entity) {
-  const hp = ent.get("hitpoints") as Hitpoints;
+  const hp = ent.getAttribute("hitpoints") as Hitpoints;
   if (!hp) return;
 
   hp.hp = Math.max(0, hp.hp - damage);
-  ent.set<Invulnerable>("invulnerable", { duration: 0.1 });
-  ent.set<DamageFlash>("damage-flash", { duration: 0.1, elapsed: 0 });
+  ent.setAttribute<Invulnerable>("invulnerable", { duration: 0.1 });
+  ent.setAttribute<DamageFlash>("damage-flash", { duration: 0.1, elapsed: 0 });
 
-  const regen = ent.get<Regenerate>("regenerate");
+  const regen = ent.getAttribute<Regenerate>("regenerate");
   if (regen) regen.elapsedDelay = 0;
 }
 

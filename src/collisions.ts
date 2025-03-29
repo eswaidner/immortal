@@ -3,7 +3,7 @@ import { Vector } from "./math";
 import { Entity } from "./state";
 
 export function initCollisions() {
-  g.state.addAttribute<Collider>("collider");
+  g.state.defineAttribute<Collider>("collider");
 }
 
 export function queryPoint(
