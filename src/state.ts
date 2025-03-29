@@ -20,12 +20,12 @@ export default class State {
     this.entities.delete(id);
 
     for (const c of Object.values(this.attributes)) {
-      (c as Attribute<any>).instances.delete(id);
+      (c as Attribute<any>).deleteInstance(id);
     }
   }
 
-  addAttribute<T>(name: string): Attribute<T> {
-    const attr = new Attribute<T>(name);
+  addAttribute<T>(name: string, cleanup?: CleanupFn<T>): Attribute<T> {
+    const attr = new Attribute<T>(name, cleanup);
     this.attributes[name] = attr;
     return attr;
   }
@@ -136,20 +136,31 @@ export class Entity {
 
   delete(name: string) {
     const attr = this.state.getAttribute(name);
-    attr.instances.delete(this.id);
+    attr.deleteInstance(this.id);
     attr.change();
   }
 }
 
+type CleanupFn<T> = (a: T) => void;
+
 export class Attribute<T> {
   name: string;
   instances: Map<number, T> = new Map();
+  cleanup?: CleanupFn<T>;
 
   // hooks
   changeEffects: Map<object, Effect<T>> = new Map();
 
-  constructor(name: string) {
+  constructor(name: string, cleanup?: CleanupFn<T>) {
     this.name = name;
+    this.cleanup = cleanup;
+  }
+
+  deleteInstance(entId: number) {
+    if (!this.instances.has(entId)) return;
+
+    if (this.cleanup) this.cleanup(this.instances.get(entId)!);
+    this.instances.delete(entId);
   }
 
   onChange(key: object, effect: Effect<T>) {

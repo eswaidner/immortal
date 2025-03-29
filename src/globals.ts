@@ -21,6 +21,11 @@ export async function initGlobals(globals: Globals) {
     "/projectiles/slash.webp",
     await Assets.load("/projectiles/slash.webp"),
   );
+
+  g.assets.set(
+    "/projectiles/arrow.webp",
+    await Assets.load("/projectiles/arrow.webp"),
+  );
 }
 
 export function setWorld(world: World) {

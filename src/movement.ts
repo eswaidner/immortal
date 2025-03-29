@@ -1,12 +1,15 @@
-import { Container, Graphics, Sprite } from "pixi.js";
+import { Container, Graphics } from "pixi.js";
 import { g } from "./globals";
-import { Vector } from "./math";
+import { clamp, Vector } from "./math";
 
 export function initMovement() {
   g.state.addAttribute<Movement>("movement");
-  g.state.addAttribute<Height>("height");
   g.state.addAttribute("in-air");
   g.state.addAttribute<Gravity>("gravity");
+
+  g.state.addAttribute<Height>("height", (h) => {
+    if (h.shadow) h.shadow.destroy();
+  });
 
   g.app.ticker.add(() => {
     updateMovement();
@@ -67,6 +70,8 @@ function updateHeight() {
     const height = e.attributes["height"] as Height;
     const pos = e.attributes["position"] as Vector;
     const [c, _] = e.attributes["container"] as [Container, number];
+
+    height.height = Math.max(height.height, 0);
 
     if (!height.shadow) {
       const shadow = new Graphics()

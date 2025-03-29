@@ -3,7 +3,7 @@ import { g } from "./globals";
 import { randomRange, Vector } from "./math";
 import { Entity } from "./state";
 import { SpriteDepth } from "./main";
-import { fireFlatProjectile } from "./projectiles";
+import { fireBallisticProjectile, fireFlatProjectile } from "./projectiles";
 import { Height } from "./movement";
 
 export async function initNpcs() {
@@ -78,38 +78,39 @@ async function spawnUnit(owner: Entity) {
   unit.set<[Container, number]>("container", [unitSprite, scale]);
 
   unit.set<AutoAttack>("auto-attack", {
-    cooldown: 1.5,
-    elapsedCooldown: 1.5,
-    range: 75,
+    cooldown: 2,
+    elapsedCooldown: 2,
+    range: 350,
     attack: (sender, target) => {
-      const slashTex = g.assets.get("/projectiles/slash.webp");
+      const arrowTex = g.assets.get("/projectiles/arrow.webp");
       const senderPos = sender.get<Vector>("position");
       const targetPos = target.get<Vector>("position");
 
-      if (!slashTex || !senderPos || !targetPos) return;
+      if (!arrowTex || !senderPos || !targetPos) return;
 
-      const slash = new Sprite(slashTex);
-      slash.anchor = { x: 0, y: 0.5 };
-      slash.scale = 0.15;
+      const arrow = new Sprite(arrowTex);
+      arrow.anchor = { x: 0.5, y: 0.5 };
+      arrow.scale = 0.45;
 
-      const delta = targetPos.sub(senderPos);
-
-      fireFlatProjectile(
+      const dest = new Vector().copy(targetPos);
+      const startPos = new Vector(senderPos.x, senderPos.y);
+      fireBallisticProjectile(
         {
+          maxRange: 350,
+          maxHeight: 550,
+          startPos: startPos,
+          destination: dest,
           sender: sender,
-          speed: 10,
-          direction: delta.normalized(),
-          range: 50,
-          hitRadius: slash.x * 0.5,
+          speed: 12,
+          hitRadius: 15,
           maxHits: 1,
-          damage: 2,
-          knockback: new Vector(0.5, 0),
+          damage: 5,
+          knockback: new Vector(100, 1),
           hits: 0,
-          distanceTraveled: 0,
-          hitExclude: ["friend", "neutral"],
+          hitExclude: ["friend"],
         },
-        new Vector(senderPos.x, senderPos.y),
-        slash as Container,
+        startPos,
+        arrow as Container,
       );
     },
   });
@@ -324,8 +325,8 @@ function updateUnitAggro() {
       if (pos.distance(enemyPos) < 175) {
         e.entity.set<Attack>("attack", {
           target: enemy.entity,
-          minRange: 60,
-          maxRange: 75,
+          minRange: 150,
+          maxRange: 300,
         });
       }
     }

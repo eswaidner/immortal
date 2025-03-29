@@ -4,7 +4,7 @@ import { g } from "./globals";
 import { Entity } from "./state";
 import { spawnUnits } from "./npcs";
 import { SpriteDepth } from "./main";
-import { fireFlatProjectile } from "./projectiles";
+import { fireBallisticProjectile, fireFlatProjectile } from "./projectiles";
 import { Hitpoints, Regenerate } from "./hitpoints";
 import { Collider } from "./collisions";
 import { Gravity, Height, Movement } from "./movement";
@@ -79,6 +79,10 @@ export default async function initPlayer(): Promise<Entity> {
     slash.anchor = { x: 0, y: 0.5 };
     slash.scale = 0.4;
 
+    const arrow = new Sprite(g.assets.get("/projectiles/arrow.webp"));
+    arrow.anchor = 0.5;
+    arrow.scale = 0.5;
+
     const delta = g.input.pointerWorldPos.sub(
       new Vector(dude.position.x, dude.position.y),
     );
@@ -100,9 +104,30 @@ export default async function initPlayer(): Promise<Entity> {
       new Vector(dude.position.x, dude.position.y),
       slash as Container,
     );
+
+    // const dest = new Vector().copy(g.input.pointerWorldPos);
+    // const startPos = new Vector(dude.position.x, dude.position.y);
+    // fireBallisticProjectile(
+    //   {
+    //     maxRange: 550,
+    //     maxHeight: 550,
+    //     startPos: startPos,
+    //     destination: dest,
+    //     sender: playerEnt,
+    //     speed: 17,
+    //     hitRadius: 15,
+    //     maxHits: 1,
+    //     damage: 27,
+    //     knockback: new Vector(100, 1),
+    //     hits: 0,
+    //     hitExclude: ["friend"],
+    //   },
+    //   startPos,
+    //   arrow as Container,
+    // );
   });
 
-  spawnUnits(playerEnt, 10);
+  spawnUnits(playerEnt, 5);
 
   return playerEnt;
 }
