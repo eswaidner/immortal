@@ -1,5 +1,5 @@
 ## Immortal
-[https://eswaidner.github.io/immortal/]
+[Play It Here](https://eswaidner.github.io/immortal/)
 
 Die a hero and become a legend
 
