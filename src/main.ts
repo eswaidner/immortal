@@ -11,7 +11,7 @@ import { initNpcs } from "./npcs";
 import { initProjectiles } from "./projectiles";
 import { initCollisions } from "./collisions";
 import { Hitpoints, initHitpoints } from "./hitpoints";
-import { initMovement } from "./movement";
+import { initMovement, Movement } from "./movement";
 
 async function init() {
   initGlobals({
@@ -69,7 +69,7 @@ async function init() {
 
   g.app.ticker.add((tk) => {
     updateWorldOriginPosition();
-    faceDirection();
+    faceVelocity();
     updatePositions();
     updateRotations();
     updateSpriteDepth();
@@ -107,17 +107,17 @@ export interface SpriteDepth {
   offset: number;
 }
 
-function faceDirection() {
+function faceVelocity() {
   const q = g.state.query({
-    include: ["face-direction", "direction", "container"],
+    include: ["face-direction", "movement", "container"],
   });
 
   for (let ent of q.entities) {
-    const dir = ent.attributes["direction"] as Vector;
+    const movement = ent.attributes["movement"] as Movement;
     const [c, scale] = ent.attributes["container"] as [Container, number];
 
-    if (dir.x !== 0) {
-      c.scale.x = dir.x > 0 ? scale : -scale;
+    if (movement.velocity.x !== 0) {
+      c.scale.x = movement.velocity.x > 0 ? scale : -scale;
     }
   }
 }

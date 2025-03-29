@@ -7,7 +7,7 @@ import { SpriteDepth } from "./main";
 import { fireFlatProjectile } from "./projectiles";
 import { Hitpoints, Regenerate } from "./hitpoints";
 import { Collider } from "./collisions";
-import { Movement } from "./movement";
+import { Height, Movement } from "./movement";
 
 export default async function initPlayer(): Promise<Entity> {
   g.state.addAttribute<PlayerMovement>("player-movement");
@@ -31,6 +31,10 @@ export default async function initPlayer(): Promise<Entity> {
     "position",
     new Vector(g.app.screen.width * 0.5, g.app.screen.height * 0.5),
   );
+  playerEnt.set<Height>("height", {
+    height: 0,
+    shadowOffset: new Vector(2, 12),
+  });
   playerEnt.set("camera-target", {});
   playerEnt.set<Collider>("collider", {
     offset: new Vector(),
