@@ -6,10 +6,9 @@ export default class State {
 
   static defineAttribute<T extends object>(
     key: object,
-    onAdd?: Callback<T>,
-    onRemove?: Callback<T>,
+    callbacks?: { onAdd?: Callback<T>; onRemove?: Callback<T> },
   ) {
-    const attr = new Attribute<T>(onAdd, onRemove);
+    const attr = new Attribute<T>(callbacks?.onAdd, callbacks?.onRemove);
     State.attributes.set(key, attr);
   }
 

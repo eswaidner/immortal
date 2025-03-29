@@ -40,6 +40,8 @@ export interface DamageFlash {
   elapsed: number;
 }
 
+export class Dead {}
+
 export function damage(damage: number, ent: Entity) {
   const hp = ent.getAttribute("hitpoints") as Hitpoints;
   if (!hp) return;

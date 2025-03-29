@@ -11,6 +11,7 @@ import { initProjectiles } from "./projectiles";
 import { initCollisions } from "./collisions";
 import { Hitpoints, initHitpoints } from "./hitpoints";
 import { initMovement, Movement } from "./movement";
+import State from "./state";
 
 async function init() {
   initGlobals({
@@ -23,19 +24,17 @@ async function init() {
 
   g.app.stage.addChild(g.origin);
 
-  g.state.defineAttribute<Vector>("direction");
-  g.state.defineAttribute<number>("rotation");
-  g.state.defineAttribute<{}>("face-direction");
-  g.state.defineAttribute<[Container, number]>("container");
-  g.state.defineAttribute<[Container, number]>("world-positioned");
-  g.state.defineAttribute<{}>("player");
-  g.state.defineAttribute<SpriteDepth>("sprite-depth");
+  State.defineAttribute<{}>("face-direction");
+  State.defineAttribute<[Container, number]>("container");
+  State.defineAttribute<[Container, number]>("world-positioned");
+  State.defineAttribute<{}>("player");
+  State.defineAttribute<SpriteDepth>("sprite-depth");
 
   const appHolder = document.querySelector("#app")!;
 
   await g.app.init({
     resizeTo: appHolder as HTMLElement,
-    backgroundColor: "#304025",
+    backgroundColor: 0x304025,
     antialias: true,
     roundPixels: false,
     autoDensity: true,

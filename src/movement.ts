@@ -1,14 +1,16 @@
 import { Container, Graphics } from "pixi.js";
 import { g } from "./globals";
 import { Vector } from "./math";
+import State from "./state";
+import { Dead } from "./hitpoints";
 
 export function initMovement() {
-  g.state.defineAttribute<Movement>("movement");
-  g.state.defineAttribute("in-air");
-  g.state.defineAttribute<Gravity>("gravity");
-
-  g.state.defineAttribute<Height>("height", (h) => {
-    if (h.shadow) h.shadow.destroy();
+  State.defineAttribute(Movement);
+  State.defineAttribute(Airborne);
+  State.defineAttribute(Gravity);
+  State.defineAttribute(Rotation);
+  State.defineAttribute<Height>(Height, {
+    onRemove: (h) => h.shadow?.destroy(),
   });
 
   g.app.ticker.add(() => {
@@ -17,31 +19,74 @@ export function initMovement() {
   });
 }
 
-export interface Movement {
+export class SceneObject {
+  container: Container;
+
+  constructor(container: Container) {
+    this.container = container;
+  }
+}
+
+export class Position {
+  pos: Vector;
+
+  constructor(pos: Vector) {
+    this.pos = pos;
+  }
+}
+
+export class Airborne {}
+
+export class Movement {
   force: Vector;
-  velocity: Vector;
   decay: number;
   mass: number;
+  velocity: Vector = new Vector();
   maxSpeed?: number;
+
+  constructor(force: Vector, decay: number, mass: number) {
+    this.force = force;
+    this.decay = decay;
+    this.mass = mass;
+  }
 }
 
-export interface Height {
-  height: number;
+export class Height {
+  height: number = 0;
   shadowOffset: Vector;
   shadow?: Graphics;
+
+  constructor(shadowOffset: Vector) {
+    this.shadowOffset = shadowOffset;
+  }
 }
 
-export interface Gravity {
-  velocity: number;
+export class Gravity {
   decay: number;
+  velocity: number = 0;
+
+  constructor(decay: number) {
+    this.decay = decay;
+  }
+}
+
+export class Rotation {
+  radians: number;
+
+  constructor(radians: number) {
+    this.radians = radians;
+  }
 }
 
 function updateMovement() {
-  const q = g.state.query({ include: ["movement", "position"] });
+  const q = State.query({ include: [Movement, Position] });
+  const numEntities = q.length;
 
-  for (const e of q.entities) {
-    const movement = e.attributes["movement"] as Movement;
-    const pos = e.attributes["position"] as Vector;
+  for (let i = 0; i < numEntities; i++) {
+    const e = q[i];
+
+    const movement = e.getAttribute<Movement>(Movement)!;
+    const pos = e.getAttribute<Position>(Position)!;
 
     const accel = movement.force.scale(1 / movement.mass);
     const decel = movement.velocity.scale(movement.decay);
@@ -53,29 +98,30 @@ function updateMovement() {
 
     // apply velocity
     const dt = g.app.ticker.deltaMS * 0.001;
-    pos.x += movement.velocity.x * dt;
-    pos.y += movement.velocity.y * dt;
+    pos.pos.x += movement.velocity.x * dt;
+    pos.pos.y += movement.velocity.y * dt;
 
     movement.force.set(0, 0);
   }
 }
 
 function updateHeight() {
-  const q = g.state.query({
-    include: ["height", "position", "container"],
-    optional: ["dead", "gravity"],
+  const q = State.query({
+    include: [Height, Position, Container],
   });
+  const numEntities = q.length;
 
-  for (const e of q.entities) {
-    const height = e.attributes["height"] as Height;
-    const pos = e.attributes["position"] as Vector;
-    const [c, _] = e.attributes["container"] as [Container, number];
+  for (let i = 0; i < numEntities; i++) {
+    const e = q[i];
+    const height = e.getAttribute<Height>(Height)!;
+    const pos = e.getAttribute<Position>(Position)!;
+    const so = e.getAttribute<SceneObject>(SceneObject)!;
 
     height.height = Math.max(height.height, 0);
 
     if (!height.shadow) {
       const shadow = new Graphics()
-        .ellipse(0, 0, c.width * 0.5, c.width * 0.2)
+        .ellipse(0, 0, so.container.width * 0.5, so.container.width * 0.2)
         .fill(0x202020);
 
       shadow.zIndex = -Infinity;
@@ -86,17 +132,18 @@ function updateHeight() {
       height.shadow = shadow;
     }
 
-    height.shadow.x = pos.x + height.shadowOffset.x * Math.sign(c.scale.x);
-    height.shadow.y = pos.y + height.shadowOffset.y;
-    c.pivot.y = height.height;
+    const scaleSign = Math.sign(so.container.scale.x);
+    height.shadow.x = pos.pos.x + height.shadowOffset.x * scaleSign;
+    height.shadow.y = pos.pos.y + height.shadowOffset.y;
+    so.container.pivot.y = height.height;
 
     height.shadow.scale = 1 + height.height * 0.001;
     height.shadow.alpha = 0.1 + height.height * 0.0004;
 
-    if (height.height > 0) e.entity.set("in-air", {});
-    else e.entity.delete("in-air");
+    if (height.height > 0) e.setAttribute(Airborne, {});
+    else e.removeAttribute(Airborne);
 
-    const grav = e.attributes["gravity"] as Gravity;
+    const grav = e.getAttribute<Gravity>(Gravity);
     if (grav) {
       const dt = g.app.ticker.deltaMS * 0.001;
 
@@ -110,7 +157,7 @@ function updateHeight() {
       }
     }
 
-    if (e.attributes["dead"]) {
+    if (e.getAttribute(Dead)) {
       height.height = 0;
       height.shadow.visible = false;
     } else {
