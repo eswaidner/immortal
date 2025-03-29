@@ -4,6 +4,7 @@ import { Vector } from "./math";
 import { Entity } from "./state";
 import { queryPoint } from "./collisions";
 import { damage } from "./hitpoints";
+import { Gravity, Movement } from "./movement";
 
 export async function initProjectiles() {
   g.state.addAttribute<FlatProjectile>("flat-projectile");
@@ -84,13 +85,27 @@ function updateFlatProjectiles() {
     const collisions = queryPoint(pos, proj.hitRadius, Infinity, [
       "invulnerable",
       "dead",
+      "in-air",
       ...proj.hitExclude,
     ]);
 
     for (const c of collisions) {
       if (proj.hits >= proj.maxHits) break;
-      damage(proj.damage, c.ent);
       proj.hits++;
+
+      damage(proj.damage, c.ent);
+
+      // knockback
+      const movement = c.ent.get<Movement>("movement");
+      if (movement) {
+        movement.force = movement.force.add(
+          proj.direction.scale(proj.knockback.x),
+        );
+      }
+
+      // knockup
+      const grav = c.ent.get<Gravity>("gravity");
+      if (grav) grav.velocity += proj.knockback.y;
     }
   }
 }

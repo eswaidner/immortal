@@ -243,7 +243,7 @@ class Chunk {
                     hitRadius: 50,
                     maxHits: 1,
                     damage: 5,
-                    knockback: new Vector(1, 1),
+                    knockback: new Vector(500, 10),
                     hits: 0,
                     distanceTraveled: 0,
                     hitExclude: ["enemy", "neutral"],

@@ -5,6 +5,8 @@ import { Vector } from "./math";
 export function initMovement() {
   g.state.addAttribute<Movement>("movement");
   g.state.addAttribute<Height>("height");
+  g.state.addAttribute("in-air");
+  g.state.addAttribute<Gravity>("gravity");
 
   g.app.ticker.add(() => {
     updateMovement();
@@ -23,8 +25,12 @@ export interface Movement {
 export interface Height {
   height: number;
   shadowOffset: Vector;
-  velocity?: number;
   shadow?: Graphics;
+}
+
+export interface Gravity {
+  velocity: number;
+  decay: number;
 }
 
 function updateMovement() {
@@ -54,7 +60,7 @@ function updateMovement() {
 function updateHeight() {
   const q = g.state.query({
     include: ["height", "position", "container"],
-    optional: ["dead"],
+    optional: ["dead", "gravity"],
   });
 
   for (const e of q.entities) {
@@ -78,6 +84,26 @@ function updateHeight() {
     height.shadow.x = pos.x + height.shadowOffset.x * Math.sign(c.scale.x);
     height.shadow.y = pos.y + height.shadowOffset.y;
     c.pivot.y = height.height;
+
+    height.shadow.scale = 1 + height.height * 0.001;
+    height.shadow.alpha = 0.1 + height.height * 0.0004;
+
+    if (height.height > 0) e.entity.set("in-air", {});
+    else e.entity.delete("in-air");
+
+    const grav = e.attributes["gravity"] as Gravity;
+    if (grav) {
+      const dt = g.app.ticker.deltaMS * 0.001;
+
+      grav.velocity -= grav.velocity * grav.decay * dt;
+      grav.velocity = grav.velocity - 65 * dt;
+      height.height += grav.velocity;
+
+      if (height.height <= 0) {
+        height.height = 0;
+        grav.velocity = 0;
+      }
+    }
 
     if (e.attributes["dead"]) {
       height.height = 0;

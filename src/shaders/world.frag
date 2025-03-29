@@ -94,12 +94,12 @@ void main(void) {
     surfColor = mix(surfColor, waterColor, 0.8 * step(0.1, water.z - perlin_offset.x * waterNoiseBias));
 
     // GRIDS
-    float tileGrid = 1.0 - grid(1.0, 0.025, worldCoord.xy * worldTextureSize);
-    float chunkGrid = 1.0 - grid(1.0 / 16.0, 0.005, worldCoord.xy * worldTextureSize);
+    // float tileGrid = 1.0 - grid(1.0, 0.025, worldCoord.xy * worldTextureSize);
+    // float chunkGrid = 1.0 - grid(1.0 / 16.0, 0.005, worldCoord.xy * worldTextureSize);
+    // vec4 fg = vec4(surfColor - (max(tileGrid, chunkGrid) * 0.025), 1.0);
 
     // vec4 fg = vec4(vTextureCoord, 0.0, 1.0);
-
-    vec4 fg = vec4(surfColor - (max(tileGrid, chunkGrid) * 0.025), 1.0);
+    vec4 fg = vec4(surfColor, 1.0);
 
     if (worldCoord.x < 0.0 || worldCoord.y < 0.0) fg = vec4(0, 0, 0, 1);
     if (worldCoord.x > 1.0 || worldCoord.y > 1.0) fg = vec4(0, 0, 0, 1);
