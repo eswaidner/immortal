@@ -6,5 +6,6 @@ import * as Zen from "./zen";
 import "./pixi";
 import "./transforms";
 import "./viewport";
+import "./input";
 
 Zen.start();
