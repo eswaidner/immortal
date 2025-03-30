@@ -1,10 +1,12 @@
 import { Container, Graphics } from "pixi.js";
-import { g } from "./globals";
 import { Vector } from "./math";
 import State from "./state";
 import { Dead } from "./hitpoints";
 
 export function initMovement() {
+  State.defineAttribute(SceneObject);
+  State.defineAttribute(Position);
+  State.defineAttribute(FaceVelocity);
   State.defineAttribute(Movement);
   State.defineAttribute(Airborne);
   State.defineAttribute(Gravity);
@@ -36,6 +38,7 @@ export class Position {
 }
 
 export class Airborne {}
+export class FaceVelocity {}
 
 export class Movement {
   force: Vector;

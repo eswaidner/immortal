@@ -118,12 +118,12 @@ export class Vector {
 }
 
 const degToRadFactor = Math.PI / 180;
-export function deg2Rad(degrees: number): number {
+export function degToRad(degrees: number): number {
   return degrees * degToRadFactor;
 }
 
 const radToDegFactor = 180 / Math.PI;
-export function rad2Deg(radians: number): number {
+export function radToDeg(radians: number): number {
   return radians * radToDegFactor;
 }
 

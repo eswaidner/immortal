@@ -1,14 +1,13 @@
-import { Container } from "pixi.js";
-import { g } from "./globals";
 import { clamp } from "./math";
-import { Entity } from "./state";
+import State, { Entity } from "./state";
+import { SceneObject } from "./movement";
 
 export function initHitpoints() {
-  g.state.defineAttribute<Hitpoints>("hitpoints");
-  g.state.defineAttribute<Regenerate>("regenerate");
-  g.state.defineAttribute<Invulnerable>("invulnerable");
-  g.state.defineAttribute<DamageFlash>("damage-flash");
-  g.state.defineAttribute("dead");
+  State.defineAttribute<Hitpoints>(Hitpoints);
+  State.defineAttribute<Regenerate>(Regenerate);
+  State.defineAttribute<Invulnerable>(Invulnerable);
+  State.defineAttribute<DamageFlash>(DamageFlash);
+  State.defineAttribute(Dead);
 
   g.app.ticker.add(() => {
     updateHitpoints();
@@ -19,62 +18,83 @@ export function initHitpoints() {
   });
 }
 
-export interface Hitpoints {
+export class Hitpoints {
   hp: number;
   maxHp: number;
+
+  constructor(hp: number, maxHp: number) {
+    this.hp = hp;
+    this.maxHp = maxHp;
+  }
 }
 
-export interface Regenerate {
+export class Regenerate {
   rate: number;
   maxRegenPercent: number;
   delay: number;
-  elapsedDelay: number;
+  elapsedDelay: number = 0;
+
+  constructor(rate: number, maxRegenPercent: number, delay: number) {
+    this.rate = rate;
+    this.maxRegenPercent = maxRegenPercent;
+    this.delay = delay;
+  }
 }
 
-export interface Invulnerable {
+export class Invulnerable {
   duration: number;
+
+  constructor(duration: number) {
+    this.duration = duration;
+  }
 }
 
-export interface DamageFlash {
+export class DamageFlash {
   duration: number;
-  elapsed: number;
+  elapsed: number = 0;
+
+  constructor(duration: number) {
+    this.duration = duration;
+  }
 }
 
 export class Dead {}
 
 export function damage(damage: number, ent: Entity) {
-  const hp = ent.getAttribute("hitpoints") as Hitpoints;
+  const hp = ent.getAttribute<Hitpoints>(Hitpoints);
   if (!hp) return;
 
   hp.hp = Math.max(0, hp.hp - damage);
-  ent.setAttribute<Invulnerable>("invulnerable", { duration: 0.1 });
-  ent.setAttribute<DamageFlash>("damage-flash", { duration: 0.1, elapsed: 0 });
+  ent.setAttribute<Invulnerable>(Invulnerable, { duration: 0.1 });
+  ent.setAttribute<DamageFlash>(DamageFlash, { duration: 0.1, elapsed: 0 });
 
-  const regen = ent.getAttribute<Regenerate>("regenerate");
+  const regen = ent.getAttribute<Regenerate>(Regenerate);
   if (regen) regen.elapsedDelay = 0;
 }
 
 function updateHitpoints() {
-  const q = g.state.query({ include: ["hitpoints"], exclude: ["dead"] });
+  const q = State.query({ include: [Hitpoints], exclude: [Dead] });
 
-  for (const e of q.entities) {
-    const hp = e.attributes["hitpoints"] as Hitpoints;
+  for (let i = 0; i < q.length; i++) {
+    const e = q[i];
+    const hp = e.getAttribute<Hitpoints>(Hitpoints)!;
 
     hp.hp = clamp(hp.hp, 0, hp.maxHp);
 
-    if (hp.hp === 0) e.entity.set("dead", {});
+    if (hp.hp === 0) e.setAttribute(Dead, {});
   }
 }
 
 function updateRegen() {
-  const q = g.state.query({
-    include: ["regenerate", "hitpoints"],
-    exclude: ["dead"],
+  const q = State.query({
+    include: [Regenerate, Hitpoints],
+    exclude: [Dead],
   });
 
-  for (const e of q.entities) {
-    const regen = e.attributes["regenerate"] as Regenerate;
-    const hp = e.attributes["hitpoints"] as Hitpoints;
+  for (let i = 0; i < q.length; i++) {
+    const e = q[i];
+    const regen = e.getAttribute<Regenerate>(Regenerate)!;
+    const hp = e.getAttribute<Hitpoints>(Hitpoints)!;
 
     const dt = g.app.ticker.deltaMS * 0.001;
 
@@ -92,47 +112,52 @@ function updateRegen() {
 }
 
 function updateInvul() {
-  const q = g.state.query({
-    include: ["invulnerable"],
+  const q = State.query({
+    include: [Invulnerable],
   });
 
-  for (const e of q.entities) {
-    const invul = e.attributes["invulnerable"] as Invulnerable;
+  for (let i = 0; i < q.length; i++) {
+    const e = q[i];
+    const invul = e.getAttribute<Invulnerable>(Invulnerable)!;
     invul.duration -= g.app.ticker.deltaMS * 0.001;
-    if (invul.duration <= 0) e.entity.delete("invulnerable");
+    if (invul.duration <= 0) e.removeAttribute(Invulnerable);
   }
 }
 
 function updateDamageFlash() {
-  const q = g.state.query({
-    include: ["damage-flash"],
-    optional: ["container"],
+  const q = State.query({
+    include: [DamageFlash],
   });
 
-  for (const e of q.entities) {
-    const flash = e.attributes["damage-flash"] as DamageFlash;
-    const [c, _] = e.attributes["container"] as [Container, number];
+  for (let i = 0; i < q.length; i++) {
+    const e = q[i];
+    const flash = e.getAttribute<DamageFlash>(DamageFlash)!;
+    const so = e.getAttribute<SceneObject>(SceneObject)!;
 
-    if (flash.elapsed === 0) c.tint = 0xff2000;
+    if (flash.elapsed === 0) so.container.tint = 0xff2000;
 
     const dt = g.app.ticker.deltaMS * 0.001;
     flash.elapsed += dt;
 
     if (flash.elapsed >= flash.duration) {
-      e.entity.delete("damage-flash");
-      if (c) c.tint = 0xffffff; // reset tint
+      e.removeAttribute(DamageFlash);
+      if (so) so.container.tint = 0xffffff; // reset tint
     }
   }
 }
 
 function updateDead() {
-  const q = g.state.query({
-    include: ["dead", "container"],
+  const q = State.query({
+    include: [Dead, SceneObject],
   });
 
-  for (const e of q.entities) {
-    const [c, scale] = e.attributes["container"] as [Container, number];
-    c.scale.y = -scale;
-    c.alpha = Math.max(0, c.alpha - 0.02 * g.app.ticker.deltaTime);
+  for (let i = 0; i < q.length; i++) {
+    const e = q[i];
+    const so = e.getAttribute<SceneObject>(SceneObject)!;
+    so.container.scale.y *= -1;
+    so.container.alpha = Math.max(
+      0,
+      so.container.alpha - 0.02 * g.app.ticker.deltaTime,
+    );
   }
 }

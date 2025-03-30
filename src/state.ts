@@ -12,9 +12,8 @@ export default class State {
     State.attributes.set(key, attr);
   }
 
-  //TODO move to Entity constructor?
   static createEntity(name?: string): Entity {
-    //TODO recycle ids
+    //TODO random ids with recycling
     const ent = new Entity(State.nextId);
     State.nextId++;
 
