@@ -2,6 +2,47 @@ const entities: Set<number> = new Set();
 const namedEntities: Map<string, Entity> = new Map();
 const attributes: Map<object, object> = new Map();
 let nextId: number = 0;
+let shouldExit = false;
+
+function init() {
+  defineAttribute(System);
+  defineAttribute(Time);
+
+  createEntity("time").setAttribute<Time>(Time, new Time());
+}
+
+export function start() {
+  shouldExit = false;
+  requestAnimationFrame(update);
+}
+
+export function stop() {
+  shouldExit = true;
+}
+
+function update(ts: DOMHighResTimeStamp) {
+  if (shouldExit) return;
+  requestAnimationFrame(update);
+
+  // skip update if time is undefined (should never happen)
+  const t = getEntity("time")?.getAttribute<Time>(Time);
+  if (!t) return;
+
+  const tsSeconds = ts * 0.001;
+
+  if (t.previous === undefined) t.previous = tsSeconds;
+  else t.previous = t.current;
+
+  t.current = tsSeconds;
+  t.delta = t.current - t.previous;
+  t.elapsed += t.delta;
+
+  // update systems
+  const sysAttr = getAttribute<System>(System);
+  for (const sys of sysAttr.instances.values()) {
+    sys.update(t);
+  }
+}
 
 export function defineAttribute<T extends object>(
   key: object,
@@ -13,7 +54,7 @@ export function defineAttribute<T extends object>(
 
 export function createSystem(
   q: Query,
-  fn: (e: Entity) => void,
+  fn: (e: Entity, ctx: SystemContext) => void,
   options?: { name?: string; frequency?: number },
 ): Entity {
   const e = createEntity(options?.name);
@@ -101,14 +142,6 @@ export function query(q: Query): Entity[] {
   return entities;
 }
 
-export function update(deltaTime: number) {
-  // update systems
-  const sysAttr = getAttribute<System>(System);
-  for (const sys of sysAttr.instances.values()) {
-    sys.update(deltaTime);
-  }
-}
-
 type Callback<T extends object> = (a: T) => void;
 
 class Attribute<T extends object> {
@@ -161,17 +194,21 @@ export class System {
   interval: number = 0;
   elapsedInterval: number = 0;
   query: Query;
-  fn: (e: Entity) => void;
+  fn: (e: Entity, ctx: SystemContext) => void;
 
-  constructor(q: Query, fn: (e: Entity) => void, frequency?: number) {
+  constructor(
+    q: Query,
+    fn: (e: Entity, ctx: SystemContext) => void,
+    frequency?: number,
+  ) {
     this.query = q;
     this.fn = fn;
 
     if (frequency) this.interval = 1 / frequency;
   }
 
-  update(dt: number) {
-    this.elapsedInterval += dt;
+  update(t: Time) {
+    this.elapsedInterval += t.delta;
     if (this.elapsedInterval > this.interval) this.execute();
   }
 
@@ -179,10 +216,24 @@ export class System {
     // invoke fn for each entity returned by query
     const q = query(this.query);
     const len = q.length;
-    for (let i = 0; i < len; i++) this.fn(q[i]);
+
+    for (let i = 0; i < len; i++) {
+      this.fn(q[i], { deltaTime: this.elapsedInterval });
+    }
 
     this.elapsedInterval = 0;
   }
 }
 
-defineAttribute(System);
+export interface SystemContext {
+  deltaTime: number;
+}
+
+export class Time {
+  elapsed: number = 0;
+  delta: number = 0;
+  previous: DOMHighResTimeStamp = 0;
+  current: DOMHighResTimeStamp = 0;
+}
+
+init();
