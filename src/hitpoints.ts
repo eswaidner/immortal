@@ -1,6 +1,7 @@
 import { clamp } from "./math";
-import Zen, { Entity } from "./state";
-import { SceneObject } from "./movement";
+import * as Zen from "./zen";
+
+function init() {}
 
 export function initHitpoints() {
   Zen.defineAttribute<Hitpoints>(Hitpoints);
@@ -161,3 +162,5 @@ function updateDead() {
     );
   }
 }
+
+init();

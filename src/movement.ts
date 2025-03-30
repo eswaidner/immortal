@@ -1,9 +1,11 @@
-import { Container, Graphics } from "pixi.js";
+import { Graphics } from "pixi.js";
 import { Vector } from "./math";
-import { Dead } from "./hitpoints";
+// import { Dead } from "./hitpoints";
 import * as Zen from "./zen";
+import { Transform } from "./transforms";
+import { Origin, SceneObject } from "./pixi";
 
-export function initMovement() {
+function init() {
   Zen.defineAttribute(FaceVelocity);
   Zen.defineAttribute(Movement);
   Zen.defineAttribute(Airborne);
@@ -12,10 +14,11 @@ export function initMovement() {
     onRemove: (h) => h.shadow?.destroy(),
   });
 
-  g.app.ticker.add(() => {
-    updateMovement();
-    updateHeight();
-  });
+  Zen.createSystem({ include: [Movement, Transform] }, { foreach: move });
+  Zen.createSystem(
+    { include: [Height, Transform, SceneObject], resources: [Origin] },
+    { foreach: updateHeight },
+  );
 }
 
 export class Airborne {}
@@ -54,90 +57,73 @@ export class Gravity {
   }
 }
 
-function updateMovement() {
-  const q = Zen.query({ include: [Movement, Position] });
-  const numEntities = q.length;
+function move(e: Zen.Entity, ctx: Zen.SystemContext) {
+  const movement = e.getAttribute<Movement>(Movement)!;
+  const trs = e.getAttribute<Transform>(Transform)!;
 
-  for (let i = 0; i < numEntities; i++) {
-    const e = q[i];
+  const accel = movement.force.scale(1 / movement.mass);
+  const decel = movement.velocity.scale(movement.decay);
 
-    const movement = e.getAttribute<Movement>(Movement)!;
-    const pos = e.getAttribute<Position>(Position)!;
+  movement.velocity = movement.velocity
+    .add(accel)
+    .sub(decel)
+    .capMagnitude(movement.maxSpeed || Infinity);
 
-    const accel = movement.force.scale(1 / movement.mass);
-    const decel = movement.velocity.scale(movement.decay);
+  // apply velocity
+  trs.pos = trs.pos.add(movement.velocity.scale(ctx.deltaTime));
 
-    movement.velocity = movement.velocity
-      .add(accel)
-      .sub(decel)
-      .capMagnitude(movement.maxSpeed || Infinity);
-
-    // apply velocity
-    const dt = g.app.ticker.deltaMS * 0.001;
-    pos.pos.x += movement.velocity.x * dt;
-    pos.pos.y += movement.velocity.y * dt;
-
-    movement.force.set(0, 0);
-  }
+  movement.force.set(0, 0);
 }
 
-function updateHeight() {
-  const q = Zen.query({
-    include: [Height, Position, Container],
-  });
-  const numEntities = q.length;
+function updateHeight(e: Zen.Entity, ctx: Zen.SystemContext) {
+  const height = e.getAttribute<Height>(Height)!;
+  const trs = e.getAttribute<Transform>(Transform)!;
+  const so = e.getAttribute<SceneObject>(SceneObject)!;
 
-  for (let i = 0; i < numEntities; i++) {
-    const e = q[i];
-    const height = e.getAttribute<Height>(Height)!;
-    const pos = e.getAttribute<Position>(Position)!;
-    const so = e.getAttribute<SceneObject>(SceneObject)!;
+  height.height = Math.max(height.height, 0);
 
-    height.height = Math.max(height.height, 0);
+  if (!height.shadow) {
+    const shadow = new Graphics()
+      .ellipse(0, 0, so.container.width * 0.5, so.container.width * 0.2)
+      .fill(0x202020);
 
-    if (!height.shadow) {
-      const shadow = new Graphics()
-        .ellipse(0, 0, so.container.width * 0.5, so.container.width * 0.2)
-        .fill(0x202020);
+    shadow.zIndex = -Infinity;
+    shadow.alpha = 0.1;
 
-      shadow.zIndex = -Infinity;
-      shadow.alpha = 0.1;
+    Zen.getResource<Origin>(Origin)?.container.addChild(shadow);
 
-      g.origin.addChild(shadow);
+    height.shadow = shadow;
+  }
 
-      height.shadow = shadow;
-    }
+  const scaleSign = Math.sign(so.container.scale.x);
+  height.shadow.x = trs.pos.x + height.shadowOffset.x * scaleSign;
+  height.shadow.y = trs.pos.y + height.shadowOffset.y;
+  so.container.pivot.y = height.height;
 
-    const scaleSign = Math.sign(so.container.scale.x);
-    height.shadow.x = pos.pos.x + height.shadowOffset.x * scaleSign;
-    height.shadow.y = pos.pos.y + height.shadowOffset.y;
-    so.container.pivot.y = height.height;
+  height.shadow.scale = 1 + height.height * 0.001;
+  height.shadow.alpha = 0.1 + height.height * 0.0004;
 
-    height.shadow.scale = 1 + height.height * 0.001;
-    height.shadow.alpha = 0.1 + height.height * 0.0004;
+  if (height.height > 0) e.addAttribute(Airborne, {});
+  else e.removeAttribute(Airborne);
 
-    if (height.height > 0) e.addAttribute(Airborne, {});
-    else e.removeAttribute(Airborne);
+  const grav = e.getAttribute<Gravity>(Gravity);
+  if (grav) {
+    grav.velocity -= grav.velocity * grav.decay * ctx.deltaTime;
+    grav.velocity = grav.velocity - 65 * ctx.deltaTime;
+    height.height += grav.velocity;
 
-    const grav = e.getAttribute<Gravity>(Gravity);
-    if (grav) {
-      const dt = g.app.ticker.deltaMS * 0.001;
-
-      grav.velocity -= grav.velocity * grav.decay * dt;
-      grav.velocity = grav.velocity - 65 * dt;
-      height.height += grav.velocity;
-
-      if (height.height <= 0) {
-        height.height = 0;
-        grav.velocity = 0;
-      }
-    }
-
-    if (e.getAttribute(Dead)) {
+    if (height.height <= 0) {
       height.height = 0;
-      height.shadow.visible = false;
-    } else {
-      height.shadow.visible = true;
+      grav.velocity = 0;
     }
   }
+
+  // if (e.getAttribute(Dead)) {
+  //   height.height = 0;
+  //   height.shadow.visible = false;
+  // } else {
+  //   height.shadow.visible = true;
+  // }
 }
+
+init();

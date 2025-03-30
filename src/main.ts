@@ -7,5 +7,6 @@ import "./pixi";
 import "./transforms";
 import "./viewport";
 import "./input";
+import "./movement";
 
 Zen.start();
