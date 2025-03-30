@@ -8,7 +8,7 @@ function init() {
   defineAttribute(System);
   defineAttribute(Time);
 
-  createEntity("time").setAttribute<Time>(Time, new Time());
+  createEntity("time").addAttribute<Time>(Time, new Time());
 }
 
 export function start() {
@@ -58,7 +58,7 @@ export function createSystem(
   options?: { name?: string; frequency?: number },
 ): Entity {
   const e = createEntity(options?.name);
-  e.setAttribute<System>(System, new System(q, fn, options?.frequency));
+  e.addAttribute<System>(System, new System(q, fn, options?.frequency));
   return e;
 }
 
@@ -179,14 +179,16 @@ export class Entity {
     return attr.instances.get(this.id);
   }
 
-  setAttribute<T extends object>(key: object, value: T) {
+  addAttribute<T extends object>(key: object, value: T): Entity {
     const attr = getAttribute<T>(key);
     attr.instances.set(this.id, value);
+    return this;
   }
 
-  removeAttribute(key: object) {
+  removeAttribute(key: object): Entity {
     const attr = getAttribute(key);
     attr.removeInstance(this.id);
+    return this;
   }
 }
 

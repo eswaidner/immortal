@@ -5,5 +5,6 @@ import * as Zen from "./zen";
 // that don't depend on other included modules
 import "./pixi";
 import "./transforms";
+import "./viewport";
 
 Zen.start();

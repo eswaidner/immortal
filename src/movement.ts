@@ -116,7 +116,7 @@ function updateHeight() {
     height.shadow.scale = 1 + height.height * 0.001;
     height.shadow.alpha = 0.1 + height.height * 0.0004;
 
-    if (height.height > 0) e.setAttribute(Airborne, {});
+    if (height.height > 0) e.addAttribute(Airborne, {});
     else e.removeAttribute(Airborne);
 
     const grav = e.getAttribute<Gravity>(Gravity);
