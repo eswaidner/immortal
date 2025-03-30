@@ -23,8 +23,6 @@ function updateInput() {
   input.keyReleasesPrev = input.keyReleasesNext;
   input.keyPressesNext = kpp;
   input.keyReleasesNext = krp;
-
-  console.log(`${input.pointerScreenPos.x}, ${input.pointerScreenPos.y}`);
 }
 
 function initInput(input: Input, origin: Origin) {
@@ -50,6 +48,7 @@ function initInput(input: Input, origin: Origin) {
     if (document.visibilityState === "hidden") input.downKeys.clear();
   });
 
+  origin.container.eventMode = "dynamic";
   origin.container.on("globalpointermove", (e) => {
     input.pointerScreenPos.x = e.global.x;
     input.pointerScreenPos.y = e.global.y;
@@ -57,7 +56,7 @@ function initInput(input: Input, origin: Origin) {
     input.syncPointerWorldPos();
   });
 
-  origin.container.eventMode = "static";
+  input.initialized = true;
 }
 
 export class Input {
