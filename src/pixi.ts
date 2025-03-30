@@ -1,15 +1,22 @@
 import { Container, Graphics, WebGLRenderer } from "pixi.js";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
+import { Viewport } from "./viewport";
 
 async function init() {
-  Zen.defineAttribute(Renderer);
-  Zen.defineAttribute(Origin);
   Zen.defineAttribute(SceneObject);
 
-  Zen.createSystem({ include: [Origin] }, offsetOrigin);
-  Zen.createSystem({ include: [Transform, SceneObject] }, syncTransforms);
-  Zen.createSystem({ include: [Renderer] }, render);
+  Zen.createSystem(
+    { resources: [Origin, Viewport, Renderer] },
+    { once: offsetOrigin },
+  );
+
+  Zen.createSystem(
+    { include: [Transform, SceneObject] },
+    { foreach: syncTransforms },
+  );
+
+  Zen.createSystem({ resources: [Renderer, Origin] }, { once: render });
 
   const canvas = document.querySelector("#zen-app")! as HTMLCanvasElement;
   canvas.style.width = "100%";
@@ -30,9 +37,8 @@ async function init() {
   gfx.pivot = 25;
   origin.addChild(gfx);
 
-  Zen.createEntity("renderer").addAttribute(Renderer, new Renderer(renderer));
-
-  Zen.createEntity("origin").addAttribute(Origin, new Origin(origin));
+  Zen.createResource<Renderer>(Renderer, new Renderer(renderer));
+  Zen.createResource<Origin>(Origin, new Origin(origin));
 }
 
 class Renderer {
@@ -59,12 +65,14 @@ export class SceneObject {
   }
 }
 
-function offsetOrigin(e: Zen.Entity) {
-  const o = e.getAttribute<Origin>(Origin)!;
+function offsetOrigin() {
+  const o = Zen.getResource<Origin>(Origin)!;
+  const vp = Zen.getResource<Viewport>(Viewport)!.transform();
 
-  const vp = Zen.getEntity("viewport")?.getAttribute<Transform>(Transform);
-  const r = Zen.getEntity("renderer")?.getAttribute<Renderer>(Renderer);
-  if (!vp || !r) return;
+  //TODO remove once viewport has screen size info
+  const r = Zen.getResource<Renderer>(Renderer)!;
+
+  if (!vp) return;
 
   o.container.pivot = {
     x: vp.pos.x,
@@ -90,19 +98,18 @@ function syncTransforms(e: Zen.Entity) {
   so.container.scale.y = trs.scale.y;
 }
 
-function render(e: Zen.Entity) {
-  const r = e.getAttribute<Renderer>(Renderer)!;
-  const o = Zen.getEntity("origin")?.getAttribute<Origin>(Origin);
-  if (o) {
-    r.renderer.render(o.container);
-  }
+function render() {
+  const r = Zen.getResource<Renderer>(Renderer)!;
+  const o = Zen.getResource<Origin>(Origin)!;
+
+  r.renderer.render(o.container);
 }
 
 // adapted from WebGl2Fundementals
 // https://webgl2fundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
 function onResize(entries: ResizeObserverEntry[]) {
   for (const entry of entries) {
-    const r = Zen.getEntity("renderer")?.getAttribute<Renderer>(Renderer);
+    const r = Zen.getResource<Renderer>(Renderer);
     if (!r || entry.target !== r.renderer.canvas) continue;
 
     const size = entry.devicePixelContentBoxSize[0];
@@ -116,7 +123,7 @@ function onResize(entries: ResizeObserverEntry[]) {
     if (needResize) {
       r.renderer.resize(displayWidth, displayHeight);
 
-      const o = Zen.getEntity("origin")?.getAttribute<Origin>(Origin);
+      const o = Zen.getResource<Origin>(Origin);
       if (o) r.renderer.render(o);
     }
   }

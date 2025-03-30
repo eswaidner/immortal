@@ -1,14 +1,13 @@
-const entities: Set<number> = new Set();
-const namedEntities: Map<string, Entity> = new Map();
 const attributes: Map<object, object> = new Map();
+const resources: Map<object, object> = new Map();
+let entCount: number = 0;
 let nextId: number = 0;
 let shouldExit = false;
 
 function init() {
   defineAttribute(System);
-  defineAttribute(Time);
 
-  createEntity("time").addAttribute<Time>(Time, new Time());
+  createResource<Time>(Time, new Time());
 }
 
 export function start() {
@@ -25,7 +24,7 @@ function update(ts: DOMHighResTimeStamp) {
   requestAnimationFrame(update);
 
   // skip update if time is undefined (should never happen)
-  const t = getEntity("time")?.getAttribute<Time>(Time);
+  const t = getResource<Time>(Time);
   if (!t) return;
 
   const tsSeconds = ts * 0.001;
@@ -44,9 +43,13 @@ function update(ts: DOMHighResTimeStamp) {
   }
 }
 
+export function entityCount(): number {
+  return entCount;
+}
+
 export function defineAttribute<T extends object>(
   key: object,
-  callbacks?: { onAdd?: Callback<T>; onRemove?: Callback<T> },
+  callbacks?: { onAdd?: AttributeCallback<T>; onRemove?: AttributeCallback<T> },
 ) {
   const attr = new Attribute<T>(callbacks?.onAdd, callbacks?.onRemove);
   attributes.set(key, attr);
@@ -54,46 +57,56 @@ export function defineAttribute<T extends object>(
 
 export function createSystem(
   q: Query,
-  fn: (e: Entity, ctx: SystemContext) => void,
-  options?: { name?: string; frequency?: number },
+  args: {
+    foreach?: (e: Entity, ctx: SystemContext) => void;
+    once?: (ctx: SystemContext) => void;
+    name?: string;
+    frequency?: number;
+  },
 ): Entity {
-  const e = createEntity(options?.name);
-  e.addAttribute<System>(System, new System(q, fn, options?.frequency));
+  const e = createEntity();
+  e.addAttribute<System>(
+    System,
+    new System(q, args.foreach, args.once, args.frequency),
+  );
   return e;
 }
 
-export function createEntity(name?: string): Entity {
+export function createResource<T>(key: object, value: T) {
+  if (resources.has(key)) {
+    console.log(
+      `WARNING: resource of type '${key}' already exists, overwriting`,
+    );
+  }
+
+  resources.set(key, value as object);
+}
+
+export function deleteResource(key: object) {
+  resources.delete(key);
+}
+
+export function getResource<T>(key: object): T | undefined {
+  const res = resources.get(key);
+  return res ? (res as T) : undefined;
+}
+
+export function createEntity(): Entity {
   const ent = new Entity(nextId);
   nextId++; // max safe id is (2^53) – 1
-
-  entities.add(ent.id);
-  if (name) {
-    if (namedEntities.has(name)) {
-      console.log(
-        `WARNING: entity with name '${name}' already exists, overwriting`,
-      );
-    }
-
-    namedEntities.set(name, ent);
-  }
+  entCount++;
 
   return ent;
 }
 
-export function deleteEntity(id: number) {
-  entities.delete(id);
-
+/** Deletes an entity. Never delete the same entity more than once! */
+export function deleteEntity(e: Entity) {
   for (const c of Object.values(attributes)) {
-    c.deleteInstance(id);
+    c.deleteInstance(e.id);
   }
-}
 
-export function getEntity(name: string): Entity | undefined {
-  return namedEntities.get(name);
-}
-
-function getEntityById(id: number): Entity | undefined {
-  return entities.has(id) !== undefined ? new Entity(id) : undefined;
+  // NEVER DELETE AN ENTITY MORE THAN ONCE
+  entCount--;
 }
 
 export function getAttribute<T extends object>(key: object): Attribute<T> {
@@ -104,12 +117,20 @@ export function getAttribute<T extends object>(key: object): Attribute<T> {
 }
 
 export function query(q: Query): Entity[] {
+  if (!q.include || q.include.length === 0) return [];
+
+  if (q.resources) {
+    for (const res of q.resources) {
+      if (!getResource<object>(res)) return [];
+    }
+  }
+
   const base = getAttribute(q.include[0]);
   const entities: Entity[] = [];
 
   // check all instances of base attribute for matches
   for (let entId of base.instances.keys()) {
-    const ent = getEntityById(entId)!;
+    const ent = new Entity(entId);
     let match = true;
 
     // reject entity if a required attribute is missing
@@ -142,14 +163,14 @@ export function query(q: Query): Entity[] {
   return entities;
 }
 
-type Callback<T extends object> = (a: T) => void;
+type AttributeCallback<T extends object> = (a: T) => void;
 
 class Attribute<T extends object> {
   instances: Map<number, T> = new Map();
-  onAdd?: Callback<T>;
-  onRemove?: Callback<T>;
+  onAdd?: AttributeCallback<T>;
+  onRemove?: AttributeCallback<T>;
 
-  constructor(onAdd?: Callback<T>, onRemove?: Callback<T>) {
+  constructor(onAdd?: AttributeCallback<T>, onRemove?: AttributeCallback<T>) {
     this.onAdd = onAdd;
     this.onRemove = onRemove;
   }
@@ -163,8 +184,9 @@ class Attribute<T extends object> {
 }
 
 export interface Query {
-  include: object[];
+  include?: object[];
   exclude?: object[];
+  resources?: object[];
 }
 
 export class Entity {
@@ -196,15 +218,18 @@ export class System {
   interval: number = 0;
   elapsedInterval: number = 0;
   query: Query;
-  fn: (e: Entity, ctx: SystemContext) => void;
+  foreach?: (e: Entity, ctx: SystemContext) => void;
+  once?: (ctx: SystemContext) => void;
 
   constructor(
     q: Query,
-    fn: (e: Entity, ctx: SystemContext) => void,
+    foreach?: (e: Entity, ctx: SystemContext) => void,
+    once?: (ctx: SystemContext) => void,
     frequency?: number,
   ) {
     this.query = q;
-    this.fn = fn;
+    this.foreach = foreach;
+    this.once = once;
 
     if (frequency) this.interval = 1 / frequency;
   }
@@ -219,9 +244,15 @@ export class System {
     const q = query(this.query);
     const len = q.length;
 
-    for (let i = 0; i < len; i++) {
-      this.fn(q[i], { deltaTime: this.elapsedInterval });
+    const ctx = { deltaTime: this.elapsedInterval };
+
+    if (this.foreach) {
+      for (let i = 0; i < len; i++) {
+        this.foreach(q[i], ctx);
+      }
     }
+
+    if (this.once) this.once(ctx);
 
     this.elapsedInterval = 0;
   }
