@@ -2,6 +2,7 @@ import "./style.css";
 
 // must manually import application modules
 // that don't depend on other included modules
+import "./pixi";
 import "./transforms";
 import * as Zen from "./zen";
 

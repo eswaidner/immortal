@@ -14,9 +14,9 @@ export function defineAttribute<T extends object>(
 export function createSystem(
   q: Query,
   fn: (e: Entity) => void,
-  options?: { frequency?: number },
+  options?: { name?: string; frequency?: number },
 ): Entity {
-  const e = createEntity("sync-transforms");
+  const e = createEntity(options?.name);
   e.setAttribute<System>(System, new System(q, fn, options?.frequency));
   return e;
 }
@@ -47,7 +47,11 @@ export function deleteEntity(id: number) {
   }
 }
 
-export function getEntity(id: number): Entity | undefined {
+export function getEntity(name: string): Entity | undefined {
+  return namedEntities.get(name);
+}
+
+function getEntityById(id: number): Entity | undefined {
   return entities.has(id) !== undefined ? new Entity(id) : undefined;
 }
 
@@ -64,7 +68,7 @@ export function query(q: Query): Entity[] {
 
   // check all instances of base attribute for matches
   for (let entId of base.instances.keys()) {
-    const ent = getEntity(entId)!;
+    const ent = getEntityById(entId)!;
     let match = true;
 
     // reject entity if a required attribute is missing
