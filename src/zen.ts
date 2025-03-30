@@ -38,7 +38,7 @@ function update(ts: DOMHighResTimeStamp) {
 
   // update systems
   const sysAttr = getAttribute<System>(System);
-  for (const sys of sysAttr.instances.values()) {
+  for (const sys of sysAttr!.instances.values()) {
     sys.update(t);
   }
 }
@@ -109,9 +109,15 @@ export function deleteEntity(e: Entity) {
   entCount--;
 }
 
-export function getAttribute<T extends object>(key: object): Attribute<T> {
+export function getAttribute<T extends object>(
+  key: object,
+): Attribute<T> | undefined {
   const attr = attributes.get(key);
-  if (!attr) throw new Error(`undefined attribute '${key}'`);
+
+  if (!attr) {
+    console.log(`WARNING: undefined attribute '${key}'`);
+    return undefined;
+  }
 
   return attr as Attribute<T>;
 }
@@ -126,6 +132,8 @@ export function query(q: Query): Entity[] {
   }
 
   const base = getAttribute(q.include[0]);
+  if (!base) return [];
+
   const entities: Entity[] = [];
 
   // check all instances of base attribute for matches
@@ -136,9 +144,7 @@ export function query(q: Query): Entity[] {
     // reject entity if a required attribute is missing
     for (let j = 1; j < q.include.length; j += 1) {
       const attr = getAttribute(q.include[j]);
-
-      const val = attr.instances.get(entId);
-      if (val === undefined) {
+      if (!attr?.instances.get(entId)) {
         match = false;
         break;
       }
@@ -148,8 +154,7 @@ export function query(q: Query): Entity[] {
     if (match && q.exclude) {
       for (let j = 0; j < q.exclude.length; j += 1) {
         const attr = getAttribute(q.exclude[j]);
-
-        if (attr.instances.get(entId) !== undefined) {
+        if (attr && attr.instances.get(entId)) {
           match = false;
           break;
         }
@@ -198,18 +203,18 @@ export class Entity {
 
   getAttribute<T extends object>(key: object): T | undefined {
     const attr = getAttribute<T>(key);
-    return attr.instances.get(this.id);
+    return attr?.instances.get(this.id);
   }
 
   addAttribute<T extends object>(key: object, value: T): Entity {
     const attr = getAttribute<T>(key);
-    attr.instances.set(this.id, value);
+    attr?.instances.set(this.id, value);
     return this;
   }
 
   removeAttribute(key: object): Entity {
     const attr = getAttribute(key);
-    attr.removeInstance(this.id);
+    attr?.removeInstance(this.id);
     return this;
   }
 }
