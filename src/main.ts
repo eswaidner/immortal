@@ -1,5 +1,14 @@
 import "./style.css";
 
-async function init() {}
+// must manually import application modules
+// that don't depend on other included modules
+import "./transforms";
+import * as Zen from "./zen";
 
-init();
+//TODO temp, Zen should handle game loop internally
+function update(dt: number) {
+  requestAnimationFrame(update);
+  Zen.update(dt);
+}
+
+requestAnimationFrame(update);

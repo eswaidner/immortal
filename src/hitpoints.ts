@@ -1,13 +1,13 @@
 import { clamp } from "./math";
-import State, { Entity } from "./state";
+import Zen, { Entity } from "./state";
 import { SceneObject } from "./movement";
 
 export function initHitpoints() {
-  State.defineAttribute<Hitpoints>(Hitpoints);
-  State.defineAttribute<Regenerate>(Regenerate);
-  State.defineAttribute<Invulnerable>(Invulnerable);
-  State.defineAttribute<DamageFlash>(DamageFlash);
-  State.defineAttribute(Dead);
+  Zen.defineAttribute<Hitpoints>(Hitpoints);
+  Zen.defineAttribute<Regenerate>(Regenerate);
+  Zen.defineAttribute<Invulnerable>(Invulnerable);
+  Zen.defineAttribute<DamageFlash>(DamageFlash);
+  Zen.defineAttribute(Dead);
 
   g.app.ticker.add(() => {
     updateHitpoints();
@@ -73,7 +73,7 @@ export function damage(damage: number, ent: Entity) {
 }
 
 function updateHitpoints() {
-  const q = State.query({ include: [Hitpoints], exclude: [Dead] });
+  const q = Zen.query({ include: [Hitpoints], exclude: [Dead] });
 
   for (let i = 0; i < q.length; i++) {
     const e = q[i];
@@ -86,7 +86,7 @@ function updateHitpoints() {
 }
 
 function updateRegen() {
-  const q = State.query({
+  const q = Zen.query({
     include: [Regenerate, Hitpoints],
     exclude: [Dead],
   });
@@ -112,7 +112,7 @@ function updateRegen() {
 }
 
 function updateInvul() {
-  const q = State.query({
+  const q = Zen.query({
     include: [Invulnerable],
   });
 
@@ -125,7 +125,7 @@ function updateInvul() {
 }
 
 function updateDamageFlash() {
-  const q = State.query({
+  const q = Zen.query({
     include: [DamageFlash],
   });
 
@@ -147,7 +147,7 @@ function updateDamageFlash() {
 }
 
 function updateDead() {
-  const q = State.query({
+  const q = Zen.query({
     include: [Dead, SceneObject],
   });
 

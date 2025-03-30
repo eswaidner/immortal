@@ -1,17 +1,14 @@
 import { Container, Graphics } from "pixi.js";
 import { Vector } from "./math";
-import State from "./state";
 import { Dead } from "./hitpoints";
+import * as Zen from "./zen";
 
 export function initMovement() {
-  State.defineAttribute(SceneObject);
-  State.defineAttribute(Position);
-  State.defineAttribute(FaceVelocity);
-  State.defineAttribute(Movement);
-  State.defineAttribute(Airborne);
-  State.defineAttribute(Gravity);
-  State.defineAttribute(Rotation);
-  State.defineAttribute<Height>(Height, {
+  Zen.defineAttribute(FaceVelocity);
+  Zen.defineAttribute(Movement);
+  Zen.defineAttribute(Airborne);
+  Zen.defineAttribute(Gravity);
+  Zen.defineAttribute<Height>(Height, {
     onRemove: (h) => h.shadow?.destroy(),
   });
 
@@ -19,22 +16,6 @@ export function initMovement() {
     updateMovement();
     updateHeight();
   });
-}
-
-export class SceneObject {
-  container: Container;
-
-  constructor(container: Container) {
-    this.container = container;
-  }
-}
-
-export class Position {
-  pos: Vector;
-
-  constructor(pos: Vector) {
-    this.pos = pos;
-  }
 }
 
 export class Airborne {}
@@ -73,16 +54,8 @@ export class Gravity {
   }
 }
 
-export class Rotation {
-  radians: number;
-
-  constructor(radians: number) {
-    this.radians = radians;
-  }
-}
-
 function updateMovement() {
-  const q = State.query({ include: [Movement, Position] });
+  const q = Zen.query({ include: [Movement, Position] });
   const numEntities = q.length;
 
   for (let i = 0; i < numEntities; i++) {
@@ -109,7 +82,7 @@ function updateMovement() {
 }
 
 function updateHeight() {
-  const q = State.query({
+  const q = Zen.query({
     include: [Height, Position, Container],
   });
   const numEntities = q.length;
