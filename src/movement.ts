@@ -3,7 +3,7 @@ import { Vector } from "./math";
 import { Dead } from "./hitpoints";
 import * as Zen from "./zen";
 import { Transform } from "./transforms";
-import { Origin, SceneObject } from "./pixi";
+import { WorldOrigin, SceneObject } from "./pixi";
 
 function init() {
   Zen.defineAttribute(FaceVelocity);
@@ -16,7 +16,7 @@ function init() {
 
   Zen.createSystem({ with: [Movement, Transform] }, { foreach: move });
   Zen.createSystem(
-    { with: [Height, Transform, SceneObject], resources: [Origin] },
+    { with: [Height, Transform, SceneObject], resources: [WorldOrigin] },
     { foreach: updateHeight },
   );
 }
@@ -90,7 +90,7 @@ function updateHeight(e: Zen.Entity, ctx: Zen.SystemContext) {
     shadow.zIndex = -Infinity;
     shadow.alpha = 0.1;
 
-    Zen.getResource<Origin>(Origin)?.container.addChild(shadow);
+    Zen.getResource<WorldOrigin>(WorldOrigin)?.container.addChild(shadow);
 
     height.shadow = shadow;
   }

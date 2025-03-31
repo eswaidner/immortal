@@ -10,9 +10,10 @@ import "./input";
 import "./movement";
 import "./hitpoints";
 import "./collisions";
+import "./grid";
 import { Graphics } from "pixi.js";
-import { SceneObject } from "./pixi";
 import { Transform } from "./transforms";
+import { SceneObject } from "./pixi";
 
 Zen.start();
 

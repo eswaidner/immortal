@@ -9,7 +9,7 @@ async function init() {
   });
 
   Zen.createSystem(
-    { resources: [Origin, Viewport, Renderer] },
+    { resources: [WorldOrigin, Viewport, Renderer] },
     { once: offsetOrigin },
   );
 
@@ -18,7 +18,7 @@ async function init() {
     { foreach: syncTransforms },
   );
 
-  Zen.createSystem({ resources: [Renderer, Origin] }, { once: render });
+  Zen.createSystem({ resources: [Renderer, WorldOrigin] }, { once: render });
 
   const canvas = document.querySelector("#zen-app")! as HTMLCanvasElement;
   canvas.style.width = "100%";
@@ -33,10 +33,13 @@ async function init() {
 
   new ResizeObserver(onResize).observe(canvas, { box: "content-box" });
 
-  const origin = new Container();
+  const screenO = new Container();
+  const worldO = new Container();
+  screenO.addChild(worldO);
 
   Zen.createResource<Renderer>(Renderer, new Renderer(renderer));
-  Zen.createResource<Origin>(Origin, new Origin(origin));
+  Zen.createResource<ScreenOrigin>(ScreenOrigin, new ScreenOrigin(screenO));
+  Zen.createResource<WorldOrigin>(WorldOrigin, new WorldOrigin(worldO));
 }
 
 class Renderer {
@@ -47,7 +50,15 @@ class Renderer {
   }
 }
 
-export class Origin {
+export class ScreenOrigin {
+  container: Container;
+
+  constructor(container: Container) {
+    this.container = container;
+  }
+}
+
+export class WorldOrigin {
   container: Container;
 
   constructor(container: Container) {
@@ -59,7 +70,7 @@ export class SceneObject {
   container: Container;
 
   constructor(container: Container) {
-    const o = Zen.getResource<Origin>(Origin);
+    const o = Zen.getResource<WorldOrigin>(WorldOrigin);
     if (!o) throw new Error("undefined origin");
 
     o.container.addChild(container);
@@ -68,7 +79,7 @@ export class SceneObject {
 }
 
 function offsetOrigin() {
-  const o = Zen.getResource<Origin>(Origin)!;
+  const o = Zen.getResource<WorldOrigin>(WorldOrigin)!;
   const vp = Zen.getResource<Viewport>(Viewport)!.transform();
 
   //TODO remove once viewport has screen size info
@@ -106,7 +117,7 @@ function syncTransforms(e: Zen.Entity) {
 
 function render() {
   const r = Zen.getResource<Renderer>(Renderer)!;
-  const o = Zen.getResource<Origin>(Origin)!;
+  const o = Zen.getResource<ScreenOrigin>(ScreenOrigin)!;
 
   r.renderer.render(o.container);
 }
@@ -133,7 +144,7 @@ function onResize(entries: ResizeObserverEntry[]) {
     if (needResize) {
       r.renderer.resize(displayWidth, displayHeight);
 
-      const o = Zen.getResource<Origin>(Origin);
+      const o = Zen.getResource<WorldOrigin>(WorldOrigin);
       if (o) r.renderer.render(o);
     }
   }

@@ -1,16 +1,16 @@
 import { Vector } from "./math";
-import { Origin } from "./pixi";
+import { WorldOrigin } from "./pixi";
 import * as Zen from "./zen";
 
 function init() {
   Zen.createResource<Input>(Input, new Input());
 
-  Zen.createSystem({ resources: [Input, Origin] }, { once: updateInput });
+  Zen.createSystem({ resources: [Input, WorldOrigin] }, { once: updateInput });
 }
 
 function updateInput() {
   const input = Zen.getResource<Input>(Input)!;
-  const origin = Zen.getResource<Origin>(Origin)!;
+  const origin = Zen.getResource<WorldOrigin>(WorldOrigin)!;
 
   if (!input.initialized) initInput(input, origin);
 
@@ -25,7 +25,7 @@ function updateInput() {
   input.keyReleasesNext = krp;
 }
 
-function initInput(input: Input, origin: Origin) {
+function initInput(input: Input, origin: WorldOrigin) {
   window.onkeydown = (e) => {
     const k = e.key.toLowerCase();
 
