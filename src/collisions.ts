@@ -1,25 +1,47 @@
-import { g } from "./globals";
 import { Vector } from "./math";
-import { Entity } from "./state";
+import { Transform } from "./transforms";
+import * as Zen from "./zen";
 
-export function initCollisions() {
-  g.state.defineAttribute<Collider>("collider");
+function init() {
+  Zen.defineAttribute<Collider>(Collider);
+}
+
+export class Collider {
+  offset: Vector;
+  radius: number;
+
+  constructor(offset: Vector, radius: number) {
+    this.offset = offset;
+    this.radius = radius;
+  }
+}
+
+export interface Collision {
+  ent: Zen.Entity;
+  collider: Collider;
+  colliderWorldPos: Vector;
+  point: Vector;
 }
 
 export function queryPoint(
   pos: Vector,
   radius: number,
   limit: number = Infinity,
-  exclude?: string[],
+  filters?: { with?: object[]; without?: object[] },
 ): Collision[] {
-  const q = g.state.query({ include: ["collider", "position"], exclude });
+  const q = Zen.query({
+    with: [Collider, Transform, ...(filters?.with || [])],
+    without: filters?.without,
+  });
 
   const collisions: Collision[] = [];
-  for (const e of q.entities) {
-    const col = e.attributes["collider"] as Collider;
-    const colPos = e.attributes["position"] as Vector;
+  for (let i = 0; i < q.length; i++) {
+    const e = q[i];
 
-    const colWorldPos = colPos.add(col.offset);
+    const col = e.getAttribute<Collider>(Collider)!;
+    const colTrs = e.getAttribute<Transform>(Transform)!;
+
+    const colWorldPos = colTrs.pos.add(col.offset);
     const delta = colWorldPos.sub(pos);
 
     // if colliders overlap
@@ -28,7 +50,7 @@ export function queryPoint(
       const pointOffset = deltaMag - col.radius;
 
       collisions.push({
-        ent: e.entity,
+        ent: e,
         collider: col,
         colliderWorldPos: colWorldPos,
         point: colWorldPos.add(delta.normalized().scale(pointOffset)), // worldspace
@@ -50,14 +72,4 @@ export function queryPoint(
 //   return [];
 // }
 
-export interface Collider {
-  offset: Vector;
-  radius: number;
-}
-
-export interface Collision {
-  ent: Entity;
-  collider: Collider;
-  colliderWorldPos: Vector;
-  point: Vector;
-}
+init();

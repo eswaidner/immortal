@@ -8,5 +8,7 @@ import "./transforms";
 import "./viewport";
 import "./input";
 import "./movement";
+import "./hitpoints";
+import "./collisions";
 
 Zen.start();

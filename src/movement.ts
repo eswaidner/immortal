@@ -1,6 +1,6 @@
 import { Graphics } from "pixi.js";
 import { Vector } from "./math";
-// import { Dead } from "./hitpoints";
+import { Dead } from "./hitpoints";
 import * as Zen from "./zen";
 import { Transform } from "./transforms";
 import { Origin, SceneObject } from "./pixi";
@@ -118,12 +118,12 @@ function updateHeight(e: Zen.Entity, ctx: Zen.SystemContext) {
     }
   }
 
-  // if (e.getAttribute(Dead)) {
-  //   height.height = 0;
-  //   height.shadow.visible = false;
-  // } else {
-  //   height.shadow.visible = true;
-  // }
+  if (e.getAttribute(Dead)) {
+    height.height = 0;
+    height.shadow.visible = false;
+  } else {
+    height.shadow.visible = true;
+  }
 }
 
 init();
