@@ -13,7 +13,7 @@ export class Vector {
     return this;
   }
 
-  copy(v: Vector): Vector {
+  copyFrom(v: Vector): Vector {
     this.x = v.x;
     this.y = v.y;
     return this;

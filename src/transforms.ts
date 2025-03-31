@@ -19,14 +19,14 @@ export class Transform {
   private mat: Matrix = new Matrix();
 
   constructor(properties?: {
-    position?: Vector;
-    rotation?: number;
+    pos?: Vector;
+    rot?: number;
     scale?: Vector;
     pivot?: Vector;
     skew?: Vector;
   }) {
-    this.pos = properties?.position || new Vector();
-    this.rot = properties?.rotation || 0;
+    this.pos = properties?.pos || new Vector();
+    this.rot = properties?.rot || 0;
     this.scale = properties?.scale || new Vector(1, 1);
     this.pivot = properties?.pivot || new Vector(0.5, 0.5);
     this.skew = properties?.skew || new Vector();

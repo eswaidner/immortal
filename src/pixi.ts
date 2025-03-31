@@ -116,11 +116,15 @@ function render() {
 function onResize(entries: ResizeObserverEntry[]) {
   for (const entry of entries) {
     const r = Zen.getResource<Renderer>(Renderer);
-    if (!r || entry.target !== r.renderer.canvas) continue;
+    const vp = Zen.getResource<Viewport>(Viewport);
+    if (!r || !vp || entry.target !== r.renderer.canvas) continue;
 
     const size = entry.devicePixelContentBoxSize[0];
     const displayWidth = Math.round(size.inlineSize);
     const displayHeight = Math.round(size.blockSize);
+
+    vp.screen.x = displayWidth;
+    vp.screen.y = displayHeight;
 
     const needResize =
       r.renderer.canvas.width !== displayWidth ||

@@ -2,8 +2,6 @@ import { Vector } from "./math";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
 
-//TODO screenspace utilities
-
 function init() {
   Zen.defineAttribute(Camera);
 
@@ -17,9 +15,8 @@ function init() {
 export class Camera {}
 
 export class Viewport {
+  screen: Vector = new Vector();
   source?: Zen.Entity;
-
-  //TODO screen params, utilities, etc.
 
   constructor(source?: Zen.Entity) {
     this.source = source;
@@ -28,6 +25,8 @@ export class Viewport {
   transform(): Transform | undefined {
     return this.source?.getAttribute<Transform>(Transform);
   }
+
+  //TODO screen space utilities
 }
 
 init();
