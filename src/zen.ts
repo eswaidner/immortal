@@ -123,7 +123,7 @@ export function getAttribute<T extends object>(
 }
 
 export function query(q: Query): Entity[] {
-  if (!q.include || q.include.length === 0) return [];
+  if (!q.with || q.with.length === 0) return [];
 
   if (q.resources) {
     for (const res of q.resources) {
@@ -131,7 +131,7 @@ export function query(q: Query): Entity[] {
     }
   }
 
-  const base = getAttribute(q.include[0]);
+  const base = getAttribute(q.with[0]);
   if (!base) return [];
 
   const entities: Entity[] = [];
@@ -142,8 +142,8 @@ export function query(q: Query): Entity[] {
     let match = true;
 
     // reject entity if a required attribute is missing
-    for (let j = 1; j < q.include.length; j += 1) {
-      const attr = getAttribute(q.include[j]);
+    for (let j = 1; j < q.with.length; j += 1) {
+      const attr = getAttribute(q.with[j]);
       if (!attr?.instances.get(entId)) {
         match = false;
         break;
@@ -151,9 +151,9 @@ export function query(q: Query): Entity[] {
     }
 
     // reject entity if an excluded attribute is set
-    if (match && q.exclude) {
-      for (let j = 0; j < q.exclude.length; j += 1) {
-        const attr = getAttribute(q.exclude[j]);
+    if (match && q.without) {
+      for (let j = 0; j < q.without.length; j += 1) {
+        const attr = getAttribute(q.without[j]);
         if (attr && attr.instances.get(entId)) {
           match = false;
           break;
@@ -189,8 +189,8 @@ class Attribute<T extends object> {
 }
 
 export interface Query {
-  include?: object[];
-  exclude?: object[];
+  with?: object[];
+  without?: object[];
   resources?: object[];
 }
 

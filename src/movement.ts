@@ -14,9 +14,9 @@ function init() {
     onRemove: (h) => h.shadow?.destroy(),
   });
 
-  Zen.createSystem({ include: [Movement, Transform] }, { foreach: move });
+  Zen.createSystem({ with: [Movement, Transform] }, { foreach: move });
   Zen.createSystem(
-    { include: [Height, Transform, SceneObject], resources: [Origin] },
+    { with: [Height, Transform, SceneObject], resources: [Origin] },
     { foreach: updateHeight },
   );
 }

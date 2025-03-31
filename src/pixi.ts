@@ -12,7 +12,7 @@ async function init() {
   );
 
   Zen.createSystem(
-    { include: [Transform, SceneObject] },
+    { with: [Transform, SceneObject] },
     { foreach: syncTransforms },
   );
 
