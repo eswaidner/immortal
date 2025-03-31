@@ -1,7 +1,7 @@
 const attributes: Map<object, object> = new Map();
 const resources: Map<object, object> = new Map();
-let entCount: number = 0;
-let nextId: number = 0;
+let entityCount: number = 0;
+let nextEntityId: number = 0;
 let shouldExit = false;
 
 function init() {
@@ -43,8 +43,8 @@ function update(ts: DOMHighResTimeStamp) {
   }
 }
 
-export function entityCount(): number {
-  return entCount;
+export function getEntityCount(): number {
+  return entityCount;
 }
 
 export function defineAttribute<T extends object>(
@@ -92,9 +92,9 @@ export function getResource<T>(key: object): T | undefined {
 }
 
 export function createEntity(): Entity {
-  const ent = new Entity(nextId);
-  nextId++; // max safe id is (2^53) – 1
-  entCount++;
+  const ent = new Entity(nextEntityId);
+  nextEntityId++; // max safe id is (2^53) – 1
+  entityCount++;
 
   return ent;
 }
@@ -106,7 +106,7 @@ export function deleteEntity(e: Entity) {
   }
 
   // NEVER DELETE AN ENTITY MORE THAN ONCE
-  entCount--;
+  entityCount--;
 }
 
 export function getAttribute<T extends object>(

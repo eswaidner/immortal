@@ -9,11 +9,7 @@ function init() {
 
   const cam = Zen.createEntity()
     .addAttribute<Camera>(Camera, new Camera())
-    .addAttribute<Transform>(Transform, {
-      pos: new Vector(),
-      rot: 0,
-      scale: new Vector(1, 1),
-    });
+    .addAttribute<Transform>(Transform, new Transform());
 
   Zen.createResource<Viewport>(Viewport, new Viewport(cam));
 }
@@ -22,6 +18,7 @@ export class Camera {}
 
 export class Viewport {
   source?: Zen.Entity;
+
   //TODO screen params, utilities, etc.
 
   constructor(source?: Zen.Entity) {

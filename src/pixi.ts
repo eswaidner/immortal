@@ -1,10 +1,12 @@
-import { Container, Graphics, WebGLRenderer } from "pixi.js";
+import { Container, WebGLRenderer } from "pixi.js";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
 import { Viewport } from "./viewport";
 
 async function init() {
-  Zen.defineAttribute(SceneObject);
+  Zen.defineAttribute<SceneObject>(SceneObject, {
+    onRemove: (so) => so.container.destroy(),
+  });
 
   Zen.createSystem(
     { resources: [Origin, Viewport, Renderer] },
@@ -33,10 +35,6 @@ async function init() {
 
   const origin = new Container();
 
-  const gfx = new Graphics().rect(0, 0, 50, 50).fill(0xffffff);
-  gfx.pivot = 25;
-  origin.addChild(gfx);
-
   Zen.createResource<Renderer>(Renderer, new Renderer(renderer));
   Zen.createResource<Origin>(Origin, new Origin(origin));
 }
@@ -61,6 +59,10 @@ export class SceneObject {
   container: Container;
 
   constructor(container: Container) {
+    const o = Zen.getResource<Origin>(Origin);
+    if (!o) throw new Error("undefined origin");
+
+    o.container.addChild(container);
     this.container = container;
   }
 }
@@ -93,9 +95,13 @@ function syncTransforms(e: Zen.Entity) {
 
   so.container.x = trs.pos.x;
   so.container.y = trs.pos.y;
+  so.container.pivot.x = trs.pivot.x * so.container.width;
+  so.container.pivot.y = trs.pivot.y * so.container.height;
   so.container.rotation = trs.rot;
   so.container.scale.x = trs.scale.x;
   so.container.scale.y = trs.scale.y;
+  so.container.skew.x = trs.skew.x;
+  so.container.skew.y = trs.skew.y;
 }
 
 function render() {
