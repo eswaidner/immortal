@@ -11,9 +11,5 @@
   "devDependencies": {
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
-  },
-  "dependencies": {
-    "@pixi/layout": "^2.0.1",
-    "pixi.js": "^8.9.0"
   }
 }
