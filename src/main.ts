@@ -11,14 +11,7 @@ import "./movement";
 import "./hitpoints";
 import "./collisions";
 import "./grid";
-import { Graphics } from "pixi.js";
-import { Transform } from "./transforms";
-import { SceneObject } from "./pixi";
+import "./camera";
+import "./player";
 
 Zen.start();
-
-const gfx = new Graphics().rect(0, 0, 100, 100).fill(0xffffff);
-
-Zen.createEntity()
-  .addAttribute<Transform>(Transform, new Transform({}))
-  .addAttribute<SceneObject>(SceneObject, new SceneObject(gfx));

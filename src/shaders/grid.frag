@@ -1,0 +1,46 @@
+precision highp float;
+
+in vec2 vTextureCoord;
+in vec4 vColor;
+
+uniform sampler2D uTexture;
+
+uniform vec2 worldPos;
+uniform vec2 screenSize;
+uniform float time;
+
+float map(float value, float min1, float max1, float min2, float max2) {
+    return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+}
+
+float grid(float size, float thickness, vec2 pos) {
+    vec2 grid = 1.0 - step(thickness, fract(pos * size));
+    float mask = 1.0 - min(grid.x + grid.y, 1.0);
+    return mask;
+}
+
+// const float tileSize = 2.0;
+const float tileSize = 75.0;
+const float worldTextureSize = 512.0;
+const float halfWorldSize = worldTextureSize * tileSize * 0.5;
+
+void main(void) {
+    vec2 offsetWorldPos = -worldPos + (screenSize * vTextureCoord) - screenSize * 0.5;
+
+    vec2 worldCoord = vec2(
+            map(offsetWorldPos.x, -halfWorldSize, halfWorldSize, 0.0, 1.0),
+            map(offsetWorldPos.y, -halfWorldSize, halfWorldSize, 0.0, 1.0)
+        );
+
+    // GRIDS
+    float tileGrid = 1.0 - grid(1.0, 0.025, worldCoord.xy * worldTextureSize);
+    float chunkGrid = 1.0 - grid(1.0 / 16.0, 0.005, worldCoord.xy * worldTextureSize);
+    vec4 fg = vec4(max(tileGrid, chunkGrid) * 0.125);
+
+    // vec4 fg = vec4(vTextureCoord, 0.0, 1.0);
+
+    // if (worldCoord.x < 0.0 || worldCoord.y < 0.0) fg = vec4(0, 0, 0, 1);
+    // if (worldCoord.x > 1.0 || worldCoord.y > 1.0) fg = vec4(0, 0, 0, 1);
+
+    gl_FragColor = fg;
+}

@@ -3,16 +3,8 @@ import { Transform } from "./transforms";
 import * as Zen from "./zen";
 
 function init() {
-  Zen.defineAttribute(Camera);
-
-  const cam = Zen.createEntity()
-    .addAttribute<Camera>(Camera, new Camera())
-    .addAttribute<Transform>(Transform, new Transform());
-
-  Zen.createResource<Viewport>(Viewport, new Viewport(cam));
+  Zen.createResource<Viewport>(Viewport, new Viewport());
 }
-
-export class Camera {}
 
 export class Viewport {
   screen: Vector = new Vector();

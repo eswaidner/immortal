@@ -16,6 +16,10 @@ function init() {
 
   Zen.createSystem({ with: [Movement, Transform] }, { foreach: move });
   Zen.createSystem(
+    { with: [FaceVelocity, Movement, Transform] },
+    { foreach: faceVelocity },
+  );
+  Zen.createSystem(
     { with: [Height, Transform, SceneObject], resources: [WorldOrigin] },
     { foreach: updateHeight },
   );
@@ -25,16 +29,15 @@ export class Airborne {}
 export class FaceVelocity {}
 
 export class Movement {
-  force: Vector;
   decay: number;
   mass: number;
+  force: Vector = new Vector();
   velocity: Vector = new Vector();
   maxSpeed?: number;
 
-  constructor(force: Vector, decay: number, mass: number) {
-    this.force = force;
-    this.decay = decay;
-    this.mass = mass;
+  constructor(options: { decay: number; mass: number }) {
+    this.decay = options.decay;
+    this.mass = options.mass;
   }
 }
 
@@ -73,6 +76,16 @@ function move(e: Zen.Entity, ctx: Zen.SystemContext) {
   trs.pos = trs.pos.add(movement.velocity.scale(ctx.deltaTime));
 
   movement.force.set(0, 0);
+}
+
+function faceVelocity(e: Zen.Entity) {
+  const movement = e.getAttribute<Movement>(Movement)!;
+  const trs = e.getAttribute<Transform>(Transform)!;
+
+  if (movement.velocity.x === 0) return;
+  if (Math.sign(trs.scale.x) != Math.sign(movement.velocity.x)) {
+    trs.scale.x *= -1;
+  }
 }
 
 function updateHeight(e: Zen.Entity, ctx: Zen.SystemContext) {

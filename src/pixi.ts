@@ -69,9 +69,11 @@ export class WorldOrigin {
 export class SceneObject {
   container: Container;
 
-  constructor(container: Container) {
+  constructor(container?: Container) {
     const o = Zen.getResource<WorldOrigin>(WorldOrigin);
     if (!o) throw new Error("undefined origin");
+
+    if (!container) container = new Container();
 
     o.container.addChild(container);
     this.container = container;
