@@ -117,7 +117,7 @@ export class Vector {
   }
 }
 
-class Matrix {
+export class Matrix {
   m00: number = 1;
   m01: number = 0;
   m10: number = 0;
@@ -145,10 +145,22 @@ class Matrix {
     return new Matrix(1, 0, 0, 1, 0, 0);
   }
 
-  static trs(tx: number, ty: number, angle: number, sx = 1, sy = 1): Matrix {
+  static trs(pos: Vector, angle: number, scale: Vector): Matrix {
+    return Matrix.identity().setFromTRS(pos, angle, scale);
+  }
+
+  setFromTRS(pos: Vector, angle: number, scale: Vector): Matrix {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-    return new Matrix(sx * cos, -sy * sin, sx * sin, sy * cos, tx, ty);
+
+    this.m00 = scale.x * cos;
+    this.m01 = scale.y * -sin;
+    this.m10 = scale.x * sin;
+    this.m11 = scale.y * cos;
+    this.tx = pos.x;
+    this.ty = pos.y;
+
+    return this;
   }
 
   mul(other: Matrix): Matrix {

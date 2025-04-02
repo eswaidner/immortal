@@ -1,12 +1,10 @@
-import { Matrix } from "pixi.js";
-import { Vector } from "./math";
+import { Matrix, Vector } from "./math";
 import * as Zen from "./zen";
 
 function init() {
   Zen.defineAttribute(Transform);
 }
 
-//TODO coordinate system utilities
 //TODO parent/child relationships
 
 export class Transform {
@@ -33,18 +31,7 @@ export class Transform {
   }
 
   trs(): Matrix {
-    this.mat.setTransform(
-      this.pos.x,
-      this.pos.y,
-      this.pivot.x,
-      this.pivot.y,
-      this.scale.x,
-      this.scale.y,
-      this.rot,
-      this.skew.x,
-      this.skew.y,
-    );
-
+    this.mat.setFromTRS(this.pos, this.rot, this.scale);
     return this.mat;
   }
 }
