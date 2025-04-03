@@ -1,7 +1,11 @@
+#version 300 es
+
 precision highp float;
 
 in vec2 vTextureCoord;
 in vec4 vColor;
+
+out vec4 fragColor;
 
 uniform sampler2D uTexture;
 
@@ -41,5 +45,5 @@ void main(void) {
     // if (worldCoord.x < 0.0 || worldCoord.y < 0.0) fg = vec4(0, 0, 0, 1);
     // if (worldCoord.x > 1.0 || worldCoord.y > 1.0) fg = vec4(0, 0, 0, 1);
 
-    gl_FragColor = fg;
+    fragColor = fg;
 }

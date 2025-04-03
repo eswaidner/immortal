@@ -74,9 +74,14 @@ export class Shader {
     const gl = Zen.getResource<Viewport>(Viewport)?.gl;
     if (!gl) throw new Error("failed to get renderer");
 
+    this.mode = mode;
+    this.uniforms = options?.uniforms || {};
+    this.textures = options?.textures || {};
+    this.properties = options?.properties || {};
+
     //TODO generate worldspace or fullscreen vertex shader from template
     //TODO generate attribute passthroughs to fragment shader
-    const vert = compileShader(gl, true, "//TODO");
+    const vert = compileShader(gl, true, vertSource(this));
 
     // no preprocessing
     const frag = compileShader(gl, false, source);
@@ -94,10 +99,6 @@ export class Shader {
     }
 
     this.program = program;
-    this.mode = mode;
-    this.uniforms = options?.uniforms || {};
-    this.textures = options?.textures || {};
-    this.properties = options?.properties || {};
   }
 }
 
@@ -227,22 +228,26 @@ function onResize(entries: ResizeObserverEntry[]) {
   }
 }
 
-function buildVertSource(renderGroup: RenderGroup, mode: ShaderMode): string {
+function vertSource(shader: Shader): string {
   let attributes = "";
   let varyings = "";
   let interpolations = "";
 
+  //TODO serialize attributes
+  //TODO serialize varyings
+  //TODO generate attribute-to-varying interpolations
+
   const clip_space_calc =
-    mode === "fullscreen"
-      ? "LOCAL_POSITION"
-      : "WORLD_TO_SCREEN * VERTEX_POSITION";
+    shader.mode === "fullscreen"
+      ? "vec4(LOCAL_POSITION, 0.0, 1.0)"
+      : "vec4((WORLD_TO_SCREEN * vec3(VERTEX_POSITION, 1.0)).xy, 0.0, 1.0)";
 
   return `#version 300 es
   uniform mat3 WORLD_TO_SCREEN;
   uniform mat3 SCREEN_TO_WORLD;
 
-  in vec3 VERTEX_POSITION;
-  in vec3 LOCAL_POSITION;
+  in vec2 VERTEX_POSITION;
+  in vec2 LOCAL_POSITION;
   ${attributes}
 
   out vec2 SCREEN_POS;
@@ -253,9 +258,6 @@ function buildVertSource(renderGroup: RenderGroup, mode: ShaderMode): string {
   void main() {
     gl_Position = ${clip_space_calc};
 
-    SCREEN_POS  = VERTEX_POSITION;
-    WORLD_POS   = SCREEN_TO_WORLD * VERTEX_POSITION;
-    LOCAL_POS   = LOCAL_POSITION;
     ${interpolations}
   }
 `;
