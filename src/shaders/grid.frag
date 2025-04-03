@@ -19,7 +19,6 @@ float grid(float size, float thickness, vec2 pos) {
     return mask;
 }
 
-// const float tileSize = 2.0;
 const float tileSize = 75.0;
 const float worldTextureSize = 512.0;
 const float halfWorldSize = worldTextureSize * tileSize * 0.5;

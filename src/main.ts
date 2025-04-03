@@ -7,7 +7,7 @@ import "./transforms";
 import "./graphics";
 // import "./input";
 // import "./movement";
-// import "./grid";
+import "./grid";
 // import "./hitpoints";
 // import "./collisions";
 // import "./camera";

@@ -249,7 +249,7 @@ export class System {
     const q = query(this.query);
     const len = q.length;
 
-    const ctx = { deltaTime: this.elapsedInterval };
+    const ctx = { entities: q, deltaTime: this.elapsedInterval };
 
     if (this.foreach) {
       for (let i = 0; i < len; i++) {
@@ -264,6 +264,7 @@ export class System {
 }
 
 export interface SystemContext {
+  entities: Entity[];
   deltaTime: number;
 }
 
