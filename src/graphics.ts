@@ -1,8 +1,11 @@
-import { Vector } from "./math";
+import { Matrix, Vector } from "./math";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
 
 async function init() {
+  Zen.defineAttribute(Draw);
+  Zen.defineAttribute(DrawGroup);
+
   const canvas = document.querySelector("#zen-app")! as HTMLCanvasElement;
   canvas.style.width = "100%";
   canvas.style.height = "100%";
@@ -18,16 +21,16 @@ async function init() {
   new ResizeObserver(onResize).observe(canvas, { box: "content-box" });
 
   Zen.createSystem(
-    { with: [], resources: [Viewport] },
-    { foreach: enqueueDraw, once: render },
+    { with: [Draw], resources: [Viewport] },
+    { foreach: enqueueDraw, once: draw },
   );
 }
 
 export class Draw {
-  group: RenderGroup;
-  properties: Record<string, PropertyValue>;
+  group: DrawGroup;
+  properties: PropertyValue[];
 
-  constructor(group: RenderGroup, properties: Record<string, PropertyValue>) {
+  constructor(group: DrawGroup, properties: PropertyValue[]) {
     this.group = group;
     this.properties = properties;
   }
@@ -46,11 +49,20 @@ export class Viewport {
 }
 
 function enqueueDraw(e: Zen.Entity, ctx: Zen.SystemContext) {
-  //TODO add to instance group
+  const d = e.getAttribute<Draw>(Draw)!;
+
+  for (let i = 0; i < d.properties.length; i++) {
+    //TODO append property data to draw group
+    // d.group.propertyValues.push(d.properties[i]);
+  }
 }
 
-function render(ctx: Zen.SystemContext) {
-  //TODO dispatch instanced draw calls
+function draw(ctx: Zen.SystemContext) {
+  const q = Zen.query({ with: [DrawGroup], resources: [Viewport] });
+  for (let i = 0; i < q.length; i++) {
+    //TODO dispatch instanced draw calls
+    //TODO clear draw group property data
+  }
 }
 
 type ShaderMode = "world" | "fullscreen";
@@ -119,42 +131,42 @@ function compileShader(
   throw new Error(`failed to create shader`);
 }
 
-interface Property {
-  name: string;
-  location: number;
-  size: number;
-  stride: number;
-  offset: number;
-  //TODO type
-}
+type GLType = GLPropertyType | "mat2";
+type GLPropertyType = "float" | "vec2";
 
-interface PropertyValue {
-  //TODO type
+type PropertyValue = number | Vector;
+type UniformValue = number | Vector | Matrix;
+
+interface Property {
+  type: GLPropertyType;
 }
 
 interface Uniform {
-  name: string;
-  location: number;
-  //TODO type
+  type: GLType;
 }
 
 interface Texture {
-  name: string;
   tex: WebGLTexture;
 }
 
-export class RenderGroup {
+function getPropertySize(p: Property): number {
+  return p.type === "float" ? 1 : 2;
+}
+
+export class DrawGroup {
   shader: Shader;
   vao: WebGLVertexArrayObject;
-  //TODO should always just be 1x1 rect vertex positions
+  //TODO should always just be 1x1 rect vertex positions, attr locations may change
   // modelBuffer: BufferHandle;
-  instanceBuffer: BufferHandle;
+  instanceBuffer: BufferFormat;
+  uniformValues: Record<string, UniformValue> = {};
+  propertyValues: number[] = [];
 
   constructor(gl: WebGL2RenderingContext, shader: Shader) {
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
     // const modelBuffer = new BufferHandle(gl, modelAttrs, 0);
-    const instanceBuffer = new BufferHandle(gl, shader.properties, 1);
+    const instanceBuffer = new BufferFormat(gl, shader, 1);
     gl.bindVertexArray(null);
 
     this.shader = shader;
@@ -166,36 +178,36 @@ export class RenderGroup {
   setUniform() {}
 }
 
-export class BufferHandle {
+export class BufferFormat {
   buffer: WebGLBuffer;
   stride: number;
 
-  constructor(
-    gl: WebGL2RenderingContext,
-    props: Record<string, Property>,
-    divisor = 0,
-  ) {
+  constructor(gl: WebGL2RenderingContext, shader: Shader, divisor = 0) {
     var buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
 
+    // number of f32s per instance
     let stride = 0;
 
     // set up attributes
-    for (const a of Object.values(props)) {
-      gl.enableVertexAttribArray(a.location);
+    for (const [name, p] of Object.entries(shader.properties)) {
+      const location = gl.getAttribLocation(shader.program, name);
+      const size = getPropertySize(p);
 
-      if (divisor > 0) gl.vertexAttribDivisor(a.location, divisor);
+      gl.enableVertexAttribArray(location);
+
+      if (divisor > 0) gl.vertexAttribDivisor(location, divisor);
 
       gl.vertexAttribPointer(
-        a.location,
-        a.size, // can be 1-4 (components)
+        location,
+        size, // can be 1-4 (components)
         gl.FLOAT, // 32-bit float
         false, // do not normalize
-        a.stride, // move forward size * sizeof(type) each iteration to get the next position
-        a.offset, // start at the beginning of the buffer
+        0, // size * sizeof(type), auto-calculated
+        stride * 4, // buffer byte offset
       );
 
-      stride += a.size;
+      stride += size;
     }
 
     this.buffer = buf;
@@ -223,7 +235,6 @@ function onResize(entries: ResizeObserverEntry[]) {
 
     if (needResize) {
       vp.gl.viewport(0, 0, displayWidth, displayHeight);
-      // TODO render to avoid flashes
     }
   }
 }
@@ -233,9 +244,12 @@ function vertSource(shader: Shader): string {
   let varyings = "";
   let interpolations = "";
 
-  //TODO serialize attributes
-  //TODO serialize varyings
-  //TODO generate attribute-to-varying interpolations
+  // serialize attributes, varyings, and interpolations
+  for (const [name, p] of Object.entries(shader.properties)) {
+    attributes += `in ${p.type} _${name};\n`;
+    varyings += `out ${p.type} ${name};\n`;
+    interpolations += `  ${name} = _${name};\n`;
+  }
 
   const clip_space_calc =
     shader.mode === "fullscreen"
@@ -257,7 +271,6 @@ function vertSource(shader: Shader): string {
 
   void main() {
     gl_Position = ${clip_space_calc};
-
     ${interpolations}
   }
 `;
