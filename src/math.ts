@@ -210,6 +210,10 @@ export class Matrix {
             [${this.m10}, ${this.m11}, 0]
             [${this.tx}, ${this.ty}, 1]`;
   }
+
+  toArray(): number[] {
+    return [this.m00, this.m01, 0, this.m10, this.m11, 0, this.tx, this.ty, 1];
+  }
 }
 
 const degToRadFactor = Math.PI / 180;

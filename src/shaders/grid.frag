@@ -38,6 +38,7 @@ void main(void) {
     // vec4 fg = vec4(max(tileGrid, chunkGrid) * 0.125);
 
     vec4 fg = vec4(LOCAL_POS, 0.0, 1.0);
+    // vec4 fg = vec4(1.0, 1.0, 1.0, 1.0);
 
     // if (worldCoord.x < 0.0 || worldCoord.y < 0.0) fg = vec4(0, 0, 0, 1);
     // if (worldCoord.x > 1.0 || worldCoord.y > 1.0) fg = vec4(0, 0, 0, 1);
