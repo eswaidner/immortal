@@ -371,6 +371,11 @@ function vertSource(shader: Shader): string {
     interpolations += `  ${name} = _${name};\n`;
   }
 
+  const screen_pos_calc =
+    shader.mode === "fullscreen"
+      ? "_LOCAL_POS"
+      : "(WORLD_TO_SCREEN * world).xy";
+
   return `#version 300 es
   uniform mat3 WORLD_TO_SCREEN;
   uniform mat3 SCREEN_TO_WORLD;
@@ -385,13 +390,13 @@ function vertSource(shader: Shader): string {
   ${varyings}
 
   void main() {
-    vec3 screen = WORLD_TO_SCREEN * (TRANSFORM * vec3(_LOCAL_POS, 1.0));
+    vec3 world = TRANSFORM * vec3(_LOCAL_POS, 1.0);
 
-    SCREEN_POS = screen.xy;
-    WORLD_POS = (TRANSFORM * vec3(_LOCAL_POS, 1.0)).xy;
+    SCREEN_POS = ${screen_pos_calc}.xy;
+    WORLD_POS = world.xy;
     LOCAL_POS = _LOCAL_POS;
 
-    gl_Position = vec4((screen.xy - 0.5) * 2.0, 0.0, 1.0);
+    gl_Position = vec4((SCREEN_POS - 0.5) * 2.0, 0.0, 1.0);
 
     ${interpolations}
   }
