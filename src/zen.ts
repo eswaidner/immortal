@@ -72,7 +72,7 @@ export function createSystem(
   return e;
 }
 
-export function createResource<T>(key: object, value: T) {
+export function createResource<T>(key: object, value: T): T {
   if (resources.has(key)) {
     console.log(
       `WARNING: resource of type '${key}' already exists, overwriting`,
@@ -80,6 +80,7 @@ export function createResource<T>(key: object, value: T) {
   }
 
   resources.set(key, value as object);
+  return value;
 }
 
 export function deleteResource(key: object) {

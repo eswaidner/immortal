@@ -16,7 +16,8 @@ async function init() {
   gl.clearColor(0.07, 0.07, 0.07, 1);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  Zen.createResource(Viewport, new Viewport(gl));
+  const vp = Zen.createResource(Viewport, new Viewport(gl));
+  vp.zoom = 100;
 
   new ResizeObserver(onResize).observe(canvas, { box: "content-box" });
 
@@ -46,6 +47,7 @@ export class Draw {
 
 export class Viewport {
   screen: Vector = new Vector();
+  zoom: number = 1;
   transform: Transform = new Transform();
   gl: WebGL2RenderingContext;
 
@@ -72,6 +74,9 @@ function draw() {
 
   const vp = Zen.getResource<Viewport>(Viewport);
   if (!vp) return;
+
+  const t = Zen.getResource<Zen.Time>(Zen.Time);
+  if (!t) return;
 
   for (let i = 0; i < q.length; i++) {
     const group = q[i].getAttribute<DrawGroup>(DrawGroup)!;
@@ -100,7 +105,14 @@ function draw() {
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.instanceBuffer.buffer);
     vp.gl.bufferData(
       vp.gl.ARRAY_BUFFER,
-      new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]),
+      new Float32Array([
+        ...Matrix.trs(
+          new Vector(10, 15),
+          2 * Math.sin(t.elapsed),
+          new Vector(1, 1),
+        ).toArray(),
+        ...Matrix.trs(new Vector(0, 0), 0, new Vector(1, 1)).toArray(),
+      ]),
       vp.gl.STATIC_DRAW,
     );
 
@@ -282,24 +294,25 @@ export class BufferFormat {
     for (const [name, p] of Object.entries(shader.properties)) {
       const location = gl.getAttribLocation(shader.program, name);
 
-      const subFields = p.type === "mat3" ? 3 : 1;
-      const size = getPropertySize(p) / subFields;
+      const rows = p.type === "mat3" ? 3 : 1;
+      const totalElements = getPropertySize(p);
+      const cols = totalElements / rows;
 
       // handles matrix attribute sub-fields
-      for (let j = 0; j < subFields; j++) {
+      for (let j = 0; j < rows; j++) {
         gl.enableVertexAttribArray(location + j);
         gl.vertexAttribDivisor(location + j, 1);
 
         gl.vertexAttribPointer(
           location + j,
-          size, // can be 1-4 (components)
+          cols, // can be 1-4 (elements)
           gl.FLOAT, // 32-bit float
           false, // do not normalize
-          0, // size * sizeof(type), auto-calculated
+          totalElements * 4, // size * sizeof(type)
           stride * 4, // buffer byte offset
         );
 
-        stride += size;
+        stride += cols;
       }
     }
 
@@ -321,6 +334,10 @@ function onResize(entries: ResizeObserverEntry[]) {
 
     vp.screen.x = displayWidth;
     vp.screen.y = displayHeight;
+    vp.transform.scale = new Vector(
+      vp.zoom / vp.screen.x,
+      vp.zoom / vp.screen.y,
+    );
 
     const needResize =
       vp.gl.canvas.width !== displayWidth ||
