@@ -145,22 +145,46 @@ export class Matrix {
     return new Matrix(1, 0, 0, 1, 0, 0);
   }
 
-  static trs(pos: Vector, angle: number, scale: Vector): Matrix {
-    return Matrix.identity().setFromTRS(pos, angle, scale);
+  static trs(pos: Vector, rot: number, scale: Vector): Matrix {
+    return Matrix.scaling(scale)
+      .mul(Matrix.rotation(rot))
+      .mul(Matrix.translation(pos));
   }
 
-  setFromTRS(pos: Vector, angle: number, scale: Vector): Matrix {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
+  static trsp(pos: Vector, rot: number, scale: Vector, pivot: Vector): Matrix {
+    return Matrix.translation(pivot)
+      .mul(Matrix.scaling(scale))
+      .mul(Matrix.rotation(rot))
+      .mul(Matrix.translation(pos))
+      .mul(Matrix.translation(pivot).invert());
+  }
 
-    this.m00 = scale.x * cos;
-    this.m01 = scale.y * -sin;
-    this.m10 = scale.x * sin;
-    this.m11 = scale.y * cos;
-    this.tx = pos.x;
-    this.ty = pos.y;
+  static translation(v: Vector): Matrix {
+    const m = Matrix.identity();
+    m.tx = v.x;
+    m.ty = v.y;
+    return m;
+  }
 
-    return this;
+  static rotation(radians: number): Matrix {
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+
+    const m = Matrix.identity();
+    m.m00 = cos;
+    m.m01 = -sin;
+    m.m10 = sin;
+    m.m11 = cos;
+
+    return m;
+  }
+
+  static scaling(v: Vector): Matrix {
+    const m = Matrix.identity();
+    m.m00 = v.x;
+    m.m11 = v.y;
+
+    return m;
   }
 
   mul(other: Matrix): Matrix {
@@ -196,8 +220,8 @@ export class Matrix {
       -invDet * this.m01,
       -invDet * this.m10,
       invDet * this.m00,
-      invDet * (this.ty * this.m10 - this.tx * this.m11),
-      invDet * (this.tx * this.m01 - this.ty * this.m00),
+      -invDet * (this.ty * this.m10 - this.tx * this.m11),
+      -invDet * (this.tx * this.m01 - this.ty * this.m00),
     );
   }
 

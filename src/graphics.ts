@@ -1,4 +1,4 @@
-import { Matrix, Vector } from "./math";
+import { degToRad, Matrix, Vector } from "./math";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
 
@@ -106,12 +106,14 @@ function draw() {
     vp.gl.bufferData(
       vp.gl.ARRAY_BUFFER,
       new Float32Array([
-        ...Matrix.trs(
-          new Vector(10, 15),
-          2 * Math.sin(t.elapsed),
+        ...Matrix.trsp(
+          new Vector(0, 0),
+          degToRad(90) * Math.sin(t.elapsed),
+          // 0,
           new Vector(1, 1),
+          new Vector(0.5, 0.5),
         ).toArray(),
-        ...Matrix.trs(new Vector(0, 0), 0, new Vector(1, 1)).toArray(),
+        // ...Matrix.trs(new Vector(0, 0), 0, new Vector(1, 1)).toArray(),
       ]),
       vp.gl.STATIC_DRAW,
     );

@@ -11,28 +11,22 @@ export class Transform {
   pos: Vector;
   rot: number;
   scale: Vector;
-  pivot: Vector;
-  skew: Vector;
-
-  private mat: Matrix = new Matrix();
+  pivot: Vector; //TODO
 
   constructor(properties?: {
     pos?: Vector;
     rot?: number;
     scale?: Vector;
     pivot?: Vector;
-    skew?: Vector;
   }) {
     this.pos = properties?.pos || new Vector();
     this.rot = properties?.rot || 0;
     this.scale = properties?.scale || new Vector(1, 1);
     this.pivot = properties?.pivot || new Vector(0.5, 0.5);
-    this.skew = properties?.skew || new Vector();
   }
 
   trs(): Matrix {
-    this.mat.setFromTRS(this.pos, this.rot, this.scale);
-    return this.mat;
+    return Matrix.trs(this.pos, this.rot, this.scale);
   }
 }
 
