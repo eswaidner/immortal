@@ -1,4 +1,4 @@
-import { Matrix, Vector } from "./math";
+import { Matrix3, Vector2 } from "math.gl";
 import * as Zen from "./zen";
 
 function init() {
@@ -8,25 +8,34 @@ function init() {
 //TODO parent/child relationships
 
 export class Transform {
-  pos: Vector;
+  pos: Vector2;
   rot: number;
-  scale: Vector;
-  pivot: Vector; //TODO
+  scale: Vector2;
+  pivot: Vector2; //TODO
 
   constructor(properties?: {
-    pos?: Vector;
+    pos?: Vector2;
     rot?: number;
-    scale?: Vector;
-    pivot?: Vector;
+    scale?: Vector2;
+    pivot?: Vector2;
   }) {
-    this.pos = properties?.pos || new Vector();
+    this.pos = properties?.pos || new Vector2();
     this.rot = properties?.rot || 0;
-    this.scale = properties?.scale || new Vector(1, 1);
-    this.pivot = properties?.pivot || new Vector(0.5, 0.5);
+    this.scale = properties?.scale || new Vector2(1, 1);
+    this.pivot = properties?.pivot || new Vector2(0, 0);
   }
 
-  trs(): Matrix {
-    return Matrix.trs(this.pos, this.rot, this.scale);
+  trs(): Matrix3 {
+    const p = new Matrix3().translate(this.pos.add(this.pivot));
+
+    const m = new Matrix3();
+    m.multiplyRight(p);
+    m.scale(this.scale);
+    m.rotate(this.rot);
+    m.translate(this.pos);
+    m.multiplyRight(p.invert());
+
+    return m;
   }
 }
 

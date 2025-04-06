@@ -1,4 +1,5 @@
-import { degToRad, Matrix, Vector } from "./math";
+import { Matrix3, Vector2 } from "math.gl";
+import { degToRad } from "./math";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
 
@@ -40,13 +41,13 @@ export class Draw {
     //TODO find and set property value
   }
 
-  setVectorProperty(name: string, value: Vector) {
+  setVectorProperty(name: string, value: Vector2) {
     //TODO find and set property value
   }
 }
 
 export class Viewport {
-  screen: Vector = new Vector();
+  screen: Vector2 = new Vector2();
   zoom: number = 1;
   transform: Transform = new Transform();
   gl: WebGL2RenderingContext;
@@ -101,19 +102,21 @@ function draw() {
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.modelBuffer);
     vp.gl.bufferData(vp.gl.ARRAY_BUFFER, rectVerts, vp.gl.STATIC_DRAW);
 
+    const trs = new Matrix3();
+    const pivot = new Matrix3().translate(new Vector2(0.5, 0.5));
+    trs.multiplyRight(pivot);
+    trs.scale(new Vector2(1, 1));
+    trs.rotate(degToRad(90) * Math.sin(t.elapsed));
+    trs.translate(new Vector2(0, 0));
+    trs.multiplyRight(pivot.invert());
+
     //TODO get data from property value array
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.instanceBuffer.buffer);
     vp.gl.bufferData(
       vp.gl.ARRAY_BUFFER,
       new Float32Array([
-        ...Matrix.trsp(
-          new Vector(0, 0),
-          degToRad(90) * Math.sin(t.elapsed),
-          // 0,
-          new Vector(1, 1),
-          new Vector(0.5, 0.5),
-        ).toArray(),
-        // ...Matrix.trs(new Vector(0, 0), 0, new Vector(1, 1)).toArray(),
+        ...trs,
+        // ...Matrix3.trs(new Vector(0, 0), 0, new Vector(1, 1)).toArray(),
       ]),
       vp.gl.STATIC_DRAW,
     );
@@ -216,12 +219,12 @@ interface FloatValue {
 
 interface Vec2Value {
   type: "vec2";
-  value: Vector;
+  value: Vector2;
 }
 
 interface Mat3Value {
   type: "mat3";
-  value: Matrix;
+  value: Matrix3;
 }
 
 interface Property {
@@ -276,8 +279,8 @@ export class DrawGroup {
 
   //TODO
   setNumberUniform(name: string, value: number) {}
-  setVectorUniform(name: string, value: Vector) {}
-  setMatrixUniform(name: string, value: Matrix) {}
+  setVectorUniform(name: string, value: Vector2) {}
+  setMatrixUniform(name: string, value: Matrix3) {}
   setTexture(name: string, value: TextureValue) {}
 }
 
@@ -336,7 +339,7 @@ function onResize(entries: ResizeObserverEntry[]) {
 
     vp.screen.x = displayWidth;
     vp.screen.y = displayHeight;
-    vp.transform.scale = new Vector(
+    vp.transform.scale = new Vector2(
       vp.zoom / vp.screen.x,
       vp.zoom / vp.screen.y,
     );
