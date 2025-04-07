@@ -44,9 +44,8 @@ export class Viewport {
 function enqueueDraw(e: Zen.Entity) {
   const d = e.getAttribute<Draw>(Draw)!;
 
-  for (let i = 0; i < d.properties.length; i++) {
-    //TODO append property data to draw group
-    // d.group.propertyValues.push(d.properties[i]);
+  for (const v of Object.values(d.properties)) {
+    //TODO add value to property data buffer
   }
 
   d.group.instanceCount++;
@@ -68,6 +67,7 @@ function draw() {
     vp.gl.bindVertexArray(group.vao);
 
     //TODO set uniform values
+
     const vpTRS = vp.transform.trs();
     vp.gl.uniformMatrix3fv(
       group.shader.uniforms["WORLD_TO_SCREEN"].location,
@@ -211,9 +211,7 @@ function compileShader(
 }
 
 type GLType = "float" | "vec2" | "mat3";
-
-type PropertyValue = FloatValue | Vec2Value;
-type UniformValue = FloatValue | Vec2Value | Mat3Value;
+type GLValue = FloatValue | Vec2Value | Mat3Value;
 
 interface FloatValue {
   type: "float";
@@ -258,23 +256,32 @@ function getPropertySize(p: Property): number {
 
 export class Draw {
   group: DrawGroup;
-  properties: PropertyValue[];
+  properties: Record<string, GLValue> = {};
 
-  constructor(group: DrawGroup, properties: PropertyValue[]) {
+  constructor(group: DrawGroup) {
     this.group = group;
-    this.properties = properties;
   }
 
-  setNumberProperty(name: string, value: number) {
-    //TODO find and set property value
+  setNumberProperty(name: string, value: number): Draw {
+    return this.setProperty(name, { type: "float", value });
   }
 
-  setVectorProperty(name: string, value: Vector2) {
-    //TODO find and set property value
+  setVectorProperty(name: string, value: Vector2): Draw {
+    return this.setProperty(name, { type: "vec2", value });
   }
 
-  setMatrixProperty(name: string, value: Matrix3) {
-    //TODO find and set property value
+  setMatrixProperty(name: string, value: Matrix3): Draw {
+    return this.setProperty(name, { type: "mat3", value });
+  }
+
+  private setProperty(name: string, value: GLValue): Draw {
+    if (!this.group.shader.properties[name]) {
+      console.log(`WARNING: unkown property '${name}'`);
+      return this;
+    }
+
+    this.properties[name] = value;
+    return this;
   }
 }
 
@@ -283,7 +290,7 @@ export class DrawGroup {
   vao: WebGLVertexArrayObject;
   modelBuffer: WebGLBuffer;
   instanceBuffer: BufferFormat;
-  uniformValues: Record<string, UniformValue> = {};
+  uniformValues: Record<string, GLValue> = {};
   textureValues: Record<string, Texture> = {};
 
   instanceCount: number = 0;
@@ -302,11 +309,32 @@ export class DrawGroup {
     this.instanceBuffer = instanceBuffer;
   }
 
-  //TODO
-  setNumberUniform(name: string, value: number) {}
-  setVectorUniform(name: string, value: Vector2) {}
-  setMatrixUniform(name: string, value: Matrix3) {}
-  setTexture(name: string, value: Texture) {}
+  setNumberUniform(name: string, value: number): DrawGroup {
+    return this.setUniform(name, { type: "float", value });
+  }
+
+  setVectorUniform(name: string, value: Vector2): DrawGroup {
+    return this.setUniform(name, { type: "vec2", value });
+  }
+
+  setMatrixUniform(name: string, value: Matrix3): DrawGroup {
+    return this.setUniform(name, { type: "mat3", value });
+  }
+
+  private setUniform(name: string, value: GLValue): DrawGroup {
+    if (!this.shader.uniforms[name]) {
+      console.log(`WARNING: unkown uniform '${name}'`);
+      return this;
+    }
+
+    this.uniformValues[name] = value;
+    return this;
+  }
+
+  setTexture(name: string, value: Texture): DrawGroup {
+    //TODO
+    return this;
+  }
 }
 
 export class BufferFormat {
@@ -321,7 +349,7 @@ export class BufferFormat {
     let stride = 0;
 
     // set up attributes
-    for (const [name, p] of Object.entries(shader.properties)) {
+    for (const p of Object.values(shader.properties)) {
       if (p.location < 0) continue;
 
       const rows = p.type === "mat3" ? 3 : 1;
