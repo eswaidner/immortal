@@ -28,24 +28,6 @@ async function init() {
   );
 }
 
-export class Draw {
-  group: DrawGroup;
-  properties: PropertyValue[];
-
-  constructor(group: DrawGroup, properties: PropertyValue[]) {
-    this.group = group;
-    this.properties = properties;
-  }
-
-  setNumberProperty(name: string, value: number) {
-    //TODO find and set property value
-  }
-
-  setVectorProperty(name: string, value: Vector2) {
-    //TODO find and set property value
-  }
-}
-
 export class Viewport {
   screen: Vector2 = new Vector2();
   zoom: number = 1;
@@ -134,32 +116,40 @@ type ShaderMode = "world" | "fullscreen";
 export class Shader {
   program: WebGLProgram;
   mode: ShaderMode;
-  uniforms: Record<string, Uniform>;
-  textures: Record<string, Texture>;
-  properties: Record<string, Property>;
+  uniforms: Record<string, Uniform> = {};
+  textures: Record<string, Texture> = {};
+  properties: Record<string, Property> = {};
 
   constructor(
     source: string,
     mode: ShaderMode,
     options?: {
-      properties?: Record<string, Property>;
-      uniforms?: Record<string, Uniform>;
-      textures?: Record<string, Texture>;
+      properties?: Record<string, GLType>;
+      uniforms?: Record<string, GLType>;
+      textures?: Record<string, Texture>; //TODO sampler settings
     },
   ) {
     const gl = Zen.getResource<Viewport>(Viewport)?.gl;
     if (!gl) throw new Error("failed to get renderer");
 
     this.mode = mode;
-    this.uniforms = options?.uniforms || {};
     this.textures = options?.textures || {};
-    this.properties = options?.properties || {};
 
-    this.properties["TRANSFORM"] = { type: "mat3" };
+    // add uniforms
+    for (const [name, type] of Object.entries(options?.uniforms || {})) {
+      this.uniforms[name] = { type, location: 0 };
+    }
+
+    this.properties["TRANSFORM"] = { type: "mat3", location: 0 };
+
+    // add properties
+    for (const [name, type] of Object.entries(options?.properties || {})) {
+      this.properties[name] = { type, location: 0 };
+    }
 
     const vertSrc = vertSource(this);
     const vert = compileShader(gl, true, vertSrc);
-    // console.log(vertSrc);
+    console.log(vertSrc);
 
     const frag = compileShader(gl, false, source);
 
@@ -173,6 +163,19 @@ export class Shader {
       console.log(gl.getProgramInfoLog(program));
       gl.deleteProgram(program);
       throw new Error("failed to create gl program");
+    }
+
+    // get uniform locations
+    for (const name of Object.keys(this.uniforms)) {
+      this.uniforms[name].location = gl.getUniformLocation(program, name)!;
+    }
+
+    //TODO get texture sampler locations
+
+    // get property locations
+    for (const name of Object.keys(this.properties)) {
+      this.properties[name].location = gl.getAttribLocation(program, name)!;
+      console.log(name, this.properties[name].location);
     }
 
     //TODO loop over all uniforms
@@ -229,17 +232,17 @@ interface Mat3Value {
 
 interface Property {
   type: GLType;
+  location: number;
 }
 
 interface Uniform {
   type: GLType;
-  location: number;
+  location: WebGLUniformLocation;
 }
 
-interface Texture {}
-
-interface TextureValue {
+interface Texture {
   tex: WebGLTexture;
+  //TODO sampler settings
 }
 
 function getPropertySize(p: Property): number {
@@ -253,13 +256,35 @@ function getPropertySize(p: Property): number {
   }
 }
 
+export class Draw {
+  group: DrawGroup;
+  properties: PropertyValue[];
+
+  constructor(group: DrawGroup, properties: PropertyValue[]) {
+    this.group = group;
+    this.properties = properties;
+  }
+
+  setNumberProperty(name: string, value: number) {
+    //TODO find and set property value
+  }
+
+  setVectorProperty(name: string, value: Vector2) {
+    //TODO find and set property value
+  }
+
+  setMatrixProperty(name: string, value: Matrix3) {
+    //TODO find and set property value
+  }
+}
+
 export class DrawGroup {
   shader: Shader;
   vao: WebGLVertexArrayObject;
   modelBuffer: WebGLBuffer;
   instanceBuffer: BufferFormat;
   uniformValues: Record<string, UniformValue> = {};
-  textureValues: Record<string, TextureValue> = {};
+  textureValues: Record<string, Texture> = {};
 
   instanceCount: number = 0;
   propertyValues: number[] = [];
@@ -281,7 +306,7 @@ export class DrawGroup {
   setNumberUniform(name: string, value: number) {}
   setVectorUniform(name: string, value: Vector2) {}
   setMatrixUniform(name: string, value: Matrix3) {}
-  setTexture(name: string, value: TextureValue) {}
+  setTexture(name: string, value: Texture) {}
 }
 
 export class BufferFormat {
@@ -297,7 +322,7 @@ export class BufferFormat {
 
     // set up attributes
     for (const [name, p] of Object.entries(shader.properties)) {
-      const location = gl.getAttribLocation(shader.program, name);
+      if (p.location < 0) continue;
 
       const rows = p.type === "mat3" ? 3 : 1;
       const totalElements = getPropertySize(p);
@@ -305,11 +330,11 @@ export class BufferFormat {
 
       // handles matrix attribute sub-fields
       for (let j = 0; j < rows; j++) {
-        gl.enableVertexAttribArray(location + j);
-        gl.vertexAttribDivisor(location + j, 1);
+        gl.enableVertexAttribArray(p.location + j);
+        gl.vertexAttribDivisor(p.location + j, 1);
 
         gl.vertexAttribPointer(
-          location + j,
+          p.location + j,
           cols, // can be 1-4 (elements)
           gl.FLOAT, // 32-bit float
           false, // do not normalize
@@ -390,7 +415,7 @@ function vertSource(shader: Shader): string {
 
     attributes += `in ${p.type} _${name};\n`;
     varyings += `out ${p.type} ${name};\n`;
-    interpolations += `  ${name} = _${name};\n`;
+    interpolations += `\n${name} = _${name};`;
   }
 
   const screen_pos_calc =

@@ -11,7 +11,7 @@ export class Transform {
   pos: Vector2;
   rot: number;
   scale: Vector2;
-  pivot: Vector2; //TODO
+  pivot: Vector2;
 
   constructor(properties?: {
     pos?: Vector2;
