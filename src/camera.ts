@@ -9,7 +9,7 @@ function input() {
 
   Zen.createSystem({ with: [SmoothFollow, Transform] }, { foreach: follow });
 
-  const followAttr = new SmoothFollow({ speed: 1 });
+  const followAttr = new SmoothFollow({ speed: 8 });
   Zen.createEntity()
     .addAttribute(Camera, new Camera())
     .addAttribute(SmoothFollow, followAttr)
@@ -54,7 +54,7 @@ function follow(e: Zen.Entity, ctx: Zen.SystemContext) {
 
   const sqDist = vec2.sqrDist(targetTrs.pos, trs.pos);
 
-  if (sqDist > 5) {
+  if (sqDist > 0.005) {
     vec2.lerp(trs.pos, trs.pos, targetTrs.pos, follow.speed * ctx.deltaTime);
   }
 }

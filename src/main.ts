@@ -6,14 +6,14 @@ import * as Zen from "./zen";
 import "./transforms";
 import "./graphics";
 import "./input";
-// import "./movement";
+import "./movement";
 import "./grid";
 import { Draw, DrawGroup, Shader } from "./graphics";
 import { Transform } from "./transforms";
 // import "./hitpoints";
 // import "./collisions";
 import "./camera";
-// import "./player";
+import "./player";
 
 Zen.start();
 

@@ -30,7 +30,7 @@ async function init() {
 export class Viewport {
   resolution: vec2 = [0, 0];
   screen: vec2 = [0, 0];
-  transform: Transform = new Transform();
+  transform: Transform = new Transform({ pivot: [0.5, 0.5] });
   zoom: number = 1;
   gl: WebGL2RenderingContext;
 
