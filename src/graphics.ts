@@ -1,5 +1,4 @@
 import { Matrix3, Vector2 } from "math.gl";
-import { degToRad } from "./math";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
 
@@ -44,8 +43,16 @@ export class Viewport {
 function enqueueDraw(e: Zen.Entity) {
   const d = e.getAttribute<Draw>(Draw)!;
 
-  for (const v of Object.values(d.properties)) {
+  // TRANSFORM built-in property
+  const t = e.getAttribute<Transform>(Transform);
+  if (t) {
+    d.group.propertyValues.push(...t.trs());
+  }
+
+  for (const p of d.properties) {
     //TODO add value to property data buffer
+    if (p.type === "float") d.group.propertyValues.push(p.value);
+    else d.group.propertyValues.push(...p.value);
   }
 
   d.group.instanceCount++;
@@ -66,40 +73,18 @@ function draw() {
     vp.gl.useProgram(group.shader.program);
     vp.gl.bindVertexArray(group.vao);
 
-    //TODO set uniform values
-
     const vpTRS = vp.transform.trs();
-    vp.gl.uniformMatrix3fv(
-      group.shader.uniforms["WORLD_TO_SCREEN"].location,
-      false,
-      vpTRS.toArray(),
-    );
-
-    vp.gl.uniformMatrix3fv(
-      group.shader.uniforms["SCREEN_TO_WORLD"].location,
-      false,
-      vpTRS.invert().toArray(),
-    );
+    group.setMatrixUniform("WORLD_TO_SCREEN", vpTRS);
+    group.setMatrixUniform("SCREEN_TO_WORLD", vpTRS.invert());
 
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.modelBuffer);
     vp.gl.bufferData(vp.gl.ARRAY_BUFFER, rectVerts, vp.gl.STATIC_DRAW);
-
-    const trs = new Matrix3();
-    const pivot = new Matrix3().translate(new Vector2(0.5, 0.5));
-    trs.multiplyRight(pivot);
-    trs.scale(new Vector2(1, 1));
-    trs.rotate(degToRad(90) * Math.sin(t.elapsed));
-    trs.translate(new Vector2(0, 0));
-    trs.multiplyRight(pivot.invert());
 
     //TODO get data from property value array
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.instanceBuffer.buffer);
     vp.gl.bufferData(
       vp.gl.ARRAY_BUFFER,
-      new Float32Array([
-        ...trs,
-        // ...Matrix3.trs(new Vector(0, 0), 0, new Vector(1, 1)).toArray(),
-      ]),
+      new Float32Array(group.propertyValues),
       vp.gl.STATIC_DRAW,
     );
 
@@ -116,9 +101,9 @@ type ShaderMode = "world" | "fullscreen";
 export class Shader {
   program: WebGLProgram;
   mode: ShaderMode;
-  uniforms: Record<string, Uniform> = {};
+  uniforms: Uniform[] = [];
   textures: Record<string, Texture> = {};
-  properties: Record<string, Property> = {};
+  properties: Property[] = [];
 
   constructor(
     source: string,
@@ -136,21 +121,22 @@ export class Shader {
     this.textures = options?.textures || {};
 
     // add uniforms
+    this.uniforms.push({ name: "WORLD_TO_SCREEN", type: "mat3", location: 0 });
+    this.uniforms.push({ name: "SCREEN_TO_WORLD", type: "mat3", location: 0 });
     for (const [name, type] of Object.entries(options?.uniforms || {})) {
-      this.uniforms[name] = { type, location: 0 };
+      this.uniforms.push({ name, type, location: 0 });
     }
 
-    this.properties["TRANSFORM"] = { type: "mat3", location: 0 };
-
     // add properties
+    this.properties.push({ name: "TRANSFORM", type: "mat3", location: 0 });
     for (const [name, type] of Object.entries(options?.properties || {})) {
-      this.properties[name] = { type, location: 0 };
+      this.properties.push({ name, type, location: 0 });
     }
 
     const vertSrc = vertSource(this);
-    const vert = compileShader(gl, true, vertSrc);
     console.log(vertSrc);
 
+    const vert = compileShader(gl, true, vertSrc);
     const frag = compileShader(gl, false, source);
 
     const program = gl.createProgram();
@@ -166,28 +152,18 @@ export class Shader {
     }
 
     // get uniform locations
-    for (const name of Object.keys(this.uniforms)) {
-      this.uniforms[name].location = gl.getUniformLocation(program, name)!;
+    for (const u of this.uniforms) {
+      u.location = gl.getUniformLocation(program, u.name)!;
+      console.log(u.name, u.location);
     }
 
     //TODO get texture sampler locations
 
     // get property locations
-    for (const name of Object.keys(this.properties)) {
-      this.properties[name].location = gl.getAttribLocation(program, name)!;
-      console.log(name, this.properties[name].location);
+    for (const p of this.properties) {
+      p.location = gl.getAttribLocation(program, p.name)!;
+      console.log(p.name, p.location);
     }
-
-    //TODO loop over all uniforms
-    this.uniforms["WORLD_TO_SCREEN"] = {
-      type: "mat3",
-      location: gl.getUniformLocation(program, "WORLD_TO_SCREEN")! as number,
-    };
-
-    this.uniforms["SCREEN_TO_WORLD"] = {
-      type: "mat3",
-      location: gl.getUniformLocation(program, "SCREEN_TO_WORLD")! as number,
-    };
 
     this.program = program;
   }
@@ -229,16 +205,19 @@ interface Mat3Value {
 }
 
 interface Property {
+  name: string;
   type: GLType;
   location: number;
 }
 
 interface Uniform {
+  name: string;
   type: GLType;
   location: WebGLUniformLocation;
 }
 
 interface Texture {
+  name: string;
   tex: WebGLTexture;
   //TODO sampler settings
 }
@@ -256,7 +235,7 @@ function getPropertySize(p: Property): number {
 
 export class Draw {
   group: DrawGroup;
-  properties: Record<string, GLValue> = {};
+  properties: GLValue[] = [];
 
   constructor(group: DrawGroup) {
     this.group = group;
@@ -275,34 +254,38 @@ export class Draw {
   }
 
   private setProperty(name: string, value: GLValue): Draw {
-    if (!this.group.shader.properties[name]) {
-      console.log(`WARNING: unkown property '${name}'`);
+    const idx = this.group.shader.properties.findIndex((p) => p.name === name);
+    if (idx < 0) {
+      console.log(`WARNING: undefined property '${name}'`);
       return this;
     }
 
-    this.properties[name] = value;
+    this.properties[idx] = value;
     return this;
   }
 }
 
 export class DrawGroup {
+  gl: WebGL2RenderingContext;
   shader: Shader;
   vao: WebGLVertexArrayObject;
   modelBuffer: WebGLBuffer;
   instanceBuffer: BufferFormat;
-  uniformValues: Record<string, GLValue> = {};
   textureValues: Record<string, Texture> = {};
-
   instanceCount: number = 0;
   propertyValues: number[] = [];
 
-  constructor(gl: WebGL2RenderingContext, shader: Shader) {
+  constructor(shader: Shader) {
+    const gl = Zen.getResource<Viewport>(Viewport)?.gl;
+    if (!gl) throw new Error("failed to get renderer");
+
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
     const modelBuffer = rectModelBuffer(gl, shader);
     const instanceBuffer = new BufferFormat(gl, shader);
     gl.bindVertexArray(null);
 
+    this.gl = gl;
     this.shader = shader;
     this.vao = vao;
     this.modelBuffer = modelBuffer;
@@ -310,25 +293,38 @@ export class DrawGroup {
   }
 
   setNumberUniform(name: string, value: number): DrawGroup {
-    return this.setUniform(name, { type: "float", value });
+    this.setUniform(name, { type: "float", value });
+    return this;
   }
 
   setVectorUniform(name: string, value: Vector2): DrawGroup {
-    return this.setUniform(name, { type: "vec2", value });
+    this.setUniform(name, { type: "vec2", value });
+    return this;
   }
 
   setMatrixUniform(name: string, value: Matrix3): DrawGroup {
-    return this.setUniform(name, { type: "mat3", value });
+    this.setUniform(name, { type: "mat3", value });
+    return this;
   }
 
-  private setUniform(name: string, value: GLValue): DrawGroup {
-    if (!this.shader.uniforms[name]) {
-      console.log(`WARNING: unkown uniform '${name}'`);
+  private setUniform(name: string, value: GLValue) {
+    const u = this.shader.uniforms.find((u) => u.name === name);
+    if (!u) {
+      console.log(`WARNING: undefined uniform '${name}'`);
       return this;
     }
 
-    this.uniformValues[name] = value;
-    return this;
+    switch (value.type) {
+      case "float":
+        this.gl.uniform1f(u.location, value.value);
+        break;
+      case "vec2":
+        this.gl.uniform2fv(u.location, value.value);
+        break;
+      case "mat3":
+        this.gl.uniformMatrix3fv(u.location, false, value.value);
+        break;
+    }
   }
 
   setTexture(name: string, value: Texture): DrawGroup {
@@ -438,12 +434,12 @@ function vertSource(shader: Shader): string {
   let interpolations = "";
 
   // serialize attributes, varyings, and interpolations
-  for (const [name, p] of Object.entries(shader.properties)) {
-    if (defaultProperties.has(name)) continue;
+  for (const p of shader.properties) {
+    if (defaultProperties.has(p.name)) continue;
 
-    attributes += `in ${p.type} _${name};\n`;
-    varyings += `out ${p.type} ${name};\n`;
-    interpolations += `\n${name} = _${name};`;
+    attributes += `in ${p.type} _${p.name};\n`;
+    varyings += `out ${p.type} ${p.name};\n`;
+    interpolations += `${p.name} = _${p.name};\n`;
   }
 
   const screen_pos_calc =

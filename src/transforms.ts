@@ -26,7 +26,7 @@ export class Transform {
   }
 
   trs(): Matrix3 {
-    const p = new Matrix3().translate(this.pos.add(this.pivot));
+    const p = new Matrix3().translate(this.pos.clone().add(this.pivot));
 
     const m = new Matrix3();
     m.multiplyRight(p);
