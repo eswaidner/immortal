@@ -38,19 +38,25 @@ export class Viewport {
   }
 
   //TODO screen space utilities
+  screenToWorld() {}
+  worldToScreen() {}
 }
 
 function enqueueDraw(e: Zen.Entity) {
   const d = e.getAttribute<Draw>(Draw)!;
 
   // TRANSFORM built-in property
+  // required for all non-fullscreen shaders
   const t = e.getAttribute<Transform>(Transform);
-  if (t) {
-    d.group.propertyValues.push(...t.trs());
+  if (d.group.shader.mode === "world" && !t) {
+    console.log("ERROR: world shaders require a Transform attribute");
+    return;
   }
 
+  if (t) d.group.propertyValues.push(...t.trs());
+
+  // add value to property data buffer
   for (const p of d.properties) {
-    //TODO add value to property data buffer
     if (p.type === "float") d.group.propertyValues.push(p.value);
     else d.group.propertyValues.push(...p.value);
   }
@@ -134,7 +140,7 @@ export class Shader {
     }
 
     const vertSrc = vertSource(this);
-    console.log(vertSrc);
+    // console.log(vertSrc);
 
     const vert = compileShader(gl, true, vertSrc);
     const frag = compileShader(gl, false, source);
@@ -154,7 +160,6 @@ export class Shader {
     // get uniform locations
     for (const u of this.uniforms) {
       u.location = gl.getUniformLocation(program, u.name)!;
-      console.log(u.name, u.location);
     }
 
     //TODO get texture sampler locations
@@ -162,7 +167,6 @@ export class Shader {
     // get property locations
     for (const p of this.properties) {
       p.location = gl.getAttribLocation(program, p.name)!;
-      console.log(p.name, p.location);
     }
 
     this.program = program;
@@ -447,6 +451,11 @@ function vertSource(shader: Shader): string {
       ? "_LOCAL_POS"
       : "(WORLD_TO_SCREEN * world).xy";
 
+  const world_pos_calc =
+    shader.mode === "fullscreen"
+      ? "SCREEN_TO_WORLD * vec3(_LOCAL_POS, 1.0)"
+      : "TRANSFORM * vec3(_LOCAL_POS, 1.0)";
+
   return `#version 300 es
   uniform mat3 WORLD_TO_SCREEN;
   uniform mat3 SCREEN_TO_WORLD;
@@ -461,7 +470,7 @@ function vertSource(shader: Shader): string {
   ${varyings}
 
   void main() {
-    vec3 world = TRANSFORM * vec3(_LOCAL_POS, 1.0);
+    vec3 world = ${world_pos_calc};
 
     SCREEN_POS = ${screen_pos_calc}.xy;
     WORLD_POS = world.xy;

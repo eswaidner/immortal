@@ -8,7 +8,7 @@ import "./graphics";
 // import "./input";
 // import "./movement";
 import "./grid";
-import { Draw, DrawGroup, Shader, Viewport } from "./graphics";
+import { Draw, DrawGroup, Shader } from "./graphics";
 import { Transform } from "./transforms";
 import { Vector2 } from "math.gl";
 // import "./hitpoints";
@@ -18,16 +18,18 @@ import { Vector2 } from "math.gl";
 
 Zen.start();
 
-const t = Zen.getResource<Zen.Time>(Zen.Time)!;
-
 //TEMP test graphics
 const shader = new Shader(
   `#version 300 es
 precision highp float;
 
+in vec2 SCREEN_POS;
+in vec2 WORLD_POS;
+in vec2 LOCAL_POS;
+
 out vec4 color;
 void main() {
-  color = vec4(1.0, 1.0, 1.0, 1.0);
+  color = vec4(LOCAL_POS, 0.0, 1.0);
 }
 `,
   "world",
@@ -41,7 +43,7 @@ Zen.createEntity()
     Transform,
     new Transform({
       pos: new Vector2(2, 4),
-      rot: 6,
+      rot: 1,
       pivot: new Vector2(0.5, 0.5),
     }),
   );
