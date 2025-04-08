@@ -37,9 +37,13 @@ export class Viewport {
     this.gl = gl;
   }
 
-  //TODO screen space utilities
-  screenToWorld() {}
-  worldToScreen() {}
+  screenToWorld(screenPos: Vector2): Vector2 {
+    return new Vector2(this.transform.trs().invert().transform(screenPos));
+  }
+
+  worldToScreen(worldPos: Vector2): Vector2 {
+    return new Vector2(this.transform.trs().transform(worldPos));
+  }
 }
 
 function enqueueDraw(e: Zen.Entity) {

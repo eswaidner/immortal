@@ -5,7 +5,7 @@ import * as Zen from "./zen";
 // that don't depend on other included modules
 import "./transforms";
 import "./graphics";
-// import "./input";
+import "./input";
 // import "./movement";
 import "./grid";
 import { Draw, DrawGroup, Shader } from "./graphics";
@@ -13,7 +13,7 @@ import { Transform } from "./transforms";
 import { Vector2 } from "math.gl";
 // import "./hitpoints";
 // import "./collisions";
-// import "./camera";
+import "./camera";
 // import "./player";
 
 Zen.start();

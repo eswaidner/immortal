@@ -1,6 +1,5 @@
-import { Vector } from "./math";
 import { Transform } from "./transforms";
-import { Viewport } from "./viewport";
+import { Viewport } from "./graphics";
 import * as Zen from "./zen";
 
 function input() {
@@ -10,14 +9,24 @@ function input() {
   Zen.createSystem({ with: [SmoothFollow, Transform] }, { foreach: follow });
 
   const followAttr = new SmoothFollow({ speed: 1 });
-  const cam = Zen.createEntity()
+  Zen.createEntity()
     .addAttribute(Camera, new Camera())
     .addAttribute(SmoothFollow, followAttr)
     .addAttribute(Transform, new Transform());
 
-  //TEMP
-  const vp = Zen.getResource<Viewport>(Viewport);
-  if (vp) vp.source = cam;
+  Zen.createSystem(
+    { with: [Camera, Transform], resources: [Viewport] },
+    {
+      foreach: (e) => {
+        const vp = Zen.getResource<Viewport>(Viewport)!;
+        const trs = e.getAttribute<Transform>(Transform)!;
+
+        vp.transform.pos = trs.pos.clone();
+        vp.transform.rot = trs.rot;
+        // vp.transform.scale = trs.scale.clone(); // breaks viewport sizing
+      },
+    },
+  );
 }
 
 export class Camera {}
@@ -40,7 +49,7 @@ function follow(e: Zen.Entity, ctx: Zen.SystemContext) {
   const targetTrs = follow.target.getAttribute<Transform>(Transform);
   if (!targetTrs) return;
 
-  const sqDist = targetTrs.pos.sub(trs.pos).squaredMagnitude();
+  const sqDist = targetTrs.pos.clone().subtract(trs.pos).lengthSquared();
 
   if (sqDist > 5) {
     trs.pos = trs.pos.lerp(targetTrs.pos, follow.speed * ctx.deltaTime);
