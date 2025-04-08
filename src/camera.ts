@@ -1,6 +1,7 @@
 import { Transform } from "./transforms";
 import { Viewport } from "./graphics";
 import * as Zen from "./zen";
+import { vec2 } from "gl-matrix";
 
 function input() {
   Zen.defineAttribute(Camera);
@@ -17,13 +18,16 @@ function input() {
   Zen.createSystem(
     { with: [Camera, Transform], resources: [Viewport] },
     {
-      foreach: (e) => {
+      foreach: (e, ctx) => {
         const vp = Zen.getResource<Viewport>(Viewport)!;
         const trs = e.getAttribute<Transform>(Transform)!;
 
-        vp.transform.pos = trs.pos.clone();
+        // trs.pos[0] -= 0.5 * ctx.deltaTime;
+        // vp.setZoom(vp.getZoom() - 0.001 * ctx.deltaTime);
+
+        vp.transform.pos = vec2.clone(trs.pos);
         vp.transform.rot = trs.rot;
-        // vp.transform.scale = trs.scale.clone(); // breaks viewport sizing
+        // vp.transform.scale = vec2.clone(trs.scale); // breaks viewport sizing
       },
     },
   );
@@ -49,10 +53,10 @@ function follow(e: Zen.Entity, ctx: Zen.SystemContext) {
   const targetTrs = follow.target.getAttribute<Transform>(Transform);
   if (!targetTrs) return;
 
-  const sqDist = targetTrs.pos.clone().subtract(trs.pos).lengthSquared();
+  const sqDist = vec2.sqrDist(targetTrs.pos, trs.pos);
 
   if (sqDist > 5) {
-    trs.pos = trs.pos.lerp(targetTrs.pos, follow.speed * ctx.deltaTime);
+    vec2.lerp(trs.pos, trs.pos, targetTrs.pos, follow.speed * ctx.deltaTime);
   }
 }
 

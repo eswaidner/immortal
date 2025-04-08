@@ -1,4 +1,4 @@
-import { Matrix3, Vector2 } from "math.gl";
+import { mat2d, mat3, vec2 } from "gl-matrix";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
 
@@ -17,7 +17,7 @@ async function init() {
   gl.clear(gl.COLOR_BUFFER_BIT);
 
   const vp = Zen.createResource(Viewport, new Viewport(gl));
-  vp.zoom = 100;
+  vp.zoom = 0.01;
 
   new ResizeObserver(onResize).observe(canvas, { box: "content-box" });
 
@@ -28,21 +28,43 @@ async function init() {
 }
 
 export class Viewport {
-  screen: Vector2 = new Vector2();
-  zoom: number = 1;
+  screen: vec2 = [0, 0];
   transform: Transform = new Transform();
   gl: WebGL2RenderingContext;
+
+  private zoom: number = 1;
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl;
   }
 
-  screenToWorld(screenPos: Vector2): Vector2 {
-    return new Vector2(this.transform.trs().invert().transform(screenPos));
+  getZoom(): number {
+    return this.zoom;
   }
 
-  worldToScreen(worldPos: Vector2): Vector2 {
-    return new Vector2(this.transform.trs().transform(worldPos));
+  setZoom(z: number) {
+    this.zoom = z;
+    this.updateScale();
+  }
+
+  updateScale() {
+    this.transform.scale = [
+      this.zoom * this.screen[0],
+      this.zoom * this.screen[1],
+    ];
+  }
+
+  screenToWorld(screenPos: vec2): vec2 {
+    const worldPos = vec2.create();
+    const trs = this.transform.trs();
+    return vec2.transformMat2d(worldPos, screenPos, trs);
+  }
+
+  worldToScreen(worldPos: vec2): vec2 {
+    const screenPos = vec2.create();
+    const trs = this.transform.trs();
+    mat2d.invert(trs, trs);
+    return vec2.transformMat2d(screenPos, worldPos, trs);
   }
 }
 
@@ -57,7 +79,7 @@ function enqueueDraw(e: Zen.Entity) {
     return;
   }
 
-  if (t) d.group.propertyValues.push(...t.trs());
+  if (t) d.group.propertyValues.push(...mat3.fromMat2d(mat3.create(), t.trs()));
 
   // add value to property data buffer
   for (const p of d.properties) {
@@ -84,8 +106,18 @@ function draw() {
     vp.gl.bindVertexArray(group.vao);
 
     const vpTRS = vp.transform.trs();
-    group.setMatrixUniform("WORLD_TO_SCREEN", vpTRS);
-    group.setMatrixUniform("SCREEN_TO_WORLD", vpTRS.invert());
+    const vpTRSI = mat2d.create();
+    mat2d.invert(vpTRSI, vpTRS);
+
+    group.setMatrixUniform(
+      "SCREEN_TO_WORLD",
+      mat3.fromMat2d(mat3.create(), vpTRS),
+    );
+
+    group.setMatrixUniform(
+      "WORLD_TO_SCREEN",
+      mat3.fromMat2d(mat3.create(), vpTRSI),
+    );
 
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.modelBuffer);
     vp.gl.bufferData(vp.gl.ARRAY_BUFFER, rectVerts, vp.gl.STATIC_DRAW);
@@ -204,12 +236,12 @@ interface FloatValue {
 
 interface Vec2Value {
   type: "vec2";
-  value: Vector2;
+  value: vec2;
 }
 
 interface Mat3Value {
   type: "mat3";
-  value: Matrix3;
+  value: mat3;
 }
 
 interface Property {
@@ -253,11 +285,11 @@ export class Draw {
     return this.setProperty(name, { type: "float", value });
   }
 
-  setVectorProperty(name: string, value: Vector2): Draw {
+  setVectorProperty(name: string, value: vec2): Draw {
     return this.setProperty(name, { type: "vec2", value });
   }
 
-  setMatrixProperty(name: string, value: Matrix3): Draw {
+  setMatrixProperty(name: string, value: mat3): Draw {
     return this.setProperty(name, { type: "mat3", value });
   }
 
@@ -305,12 +337,12 @@ export class DrawGroup {
     return this;
   }
 
-  setVectorUniform(name: string, value: Vector2): DrawGroup {
+  setVectorUniform(name: string, value: vec2): DrawGroup {
     this.setUniform(name, { type: "vec2", value });
     return this;
   }
 
-  setMatrixUniform(name: string, value: Matrix3): DrawGroup {
+  setMatrixUniform(name: string, value: mat3): DrawGroup {
     this.setUniform(name, { type: "mat3", value });
     return this;
   }
@@ -394,12 +426,9 @@ function onResize(entries: ResizeObserverEntry[]) {
     const displayWidth = Math.round(size.inlineSize);
     const displayHeight = Math.round(size.blockSize);
 
-    vp.screen.x = displayWidth;
-    vp.screen.y = displayHeight;
-    vp.transform.scale = new Vector2(
-      vp.zoom / vp.screen.x,
-      vp.zoom / vp.screen.y,
-    );
+    vp.screen[0] = displayWidth;
+    vp.screen[1] = displayHeight;
+    vp.updateScale();
 
     const needResize =
       vp.gl.canvas.width !== displayWidth ||

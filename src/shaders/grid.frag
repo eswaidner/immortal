@@ -28,7 +28,7 @@ void main(void) {
         );
 
     // GRIDS
-    float tileGrid = 1.0 - grid(1.0, 0.01, worldCoord.xy * worldSize);
+    float tileGrid = 1.0 - grid(1.0, 0.02, worldCoord.xy * worldSize);
     float chunkGrid = 1.0 - grid(1.0 / 16.0, 0.003, worldCoord.xy * worldSize);
     vec4 fg = vec4(max(tileGrid, chunkGrid) * 0.125);
 

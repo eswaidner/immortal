@@ -10,7 +10,6 @@ import "./input";
 import "./grid";
 import { Draw, DrawGroup, Shader } from "./graphics";
 import { Transform } from "./transforms";
-import { Vector2 } from "math.gl";
 // import "./hitpoints";
 // import "./collisions";
 import "./camera";
@@ -42,8 +41,8 @@ Zen.createEntity()
   .addAttribute(
     Transform,
     new Transform({
-      pos: new Vector2(2, 4),
+      pos: [2, 4],
       rot: 1,
-      pivot: new Vector2(0.5, 0.5),
+      pivot: [0.5, 0.5],
     }),
   );
