@@ -30,21 +30,11 @@ async function init() {
 export class Viewport {
   screen: vec2 = [0, 0];
   transform: Transform = new Transform();
+  zoom: number = 1;
   gl: WebGL2RenderingContext;
-
-  private zoom: number = 1;
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl;
-  }
-
-  getZoom(): number {
-    return this.zoom;
-  }
-
-  setZoom(z: number) {
-    this.zoom = z;
-    this.updateScale();
   }
 
   updateScale() {
@@ -95,6 +85,8 @@ function draw() {
 
   const vp = Zen.getResource<Viewport>(Viewport);
   if (!vp) return;
+
+  vp.updateScale();
 
   const t = Zen.getResource<Zen.Time>(Zen.Time);
   if (!t) return;

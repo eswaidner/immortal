@@ -23,11 +23,10 @@ function input() {
         const trs = e.getAttribute<Transform>(Transform)!;
 
         // trs.pos[0] -= 0.5 * ctx.deltaTime;
-        // vp.setZoom(vp.getZoom() - 0.001 * ctx.deltaTime);
+        // vp.zoom -= 0.001 * ctx.deltaTime;
 
         vp.transform.pos = vec2.clone(trs.pos);
         vp.transform.rot = trs.rot;
-        // vp.transform.scale = vec2.clone(trs.scale); // breaks viewport sizing
       },
     },
   );
