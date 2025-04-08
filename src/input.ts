@@ -1,5 +1,5 @@
+import { vec2 } from "gl-matrix";
 import { Viewport } from "./graphics";
-import { Vector } from "./math";
 import * as Zen from "./zen";
 
 function init() {
@@ -48,13 +48,12 @@ function initInput(input: Input, vp: Viewport) {
     if (document.visibilityState === "hidden") input.downKeys.clear();
   });
 
-  // origin.container.eventMode = "dynamic";
-  // origin.container.on("globalpointermove", (e) => {
-  //   input.pointerScreenPos.x = e.global.x;
-  //   input.pointerScreenPos.y = e.global.y;
-
-  //   input.syncPointerWorldPos();
-  // });
+  vp.gl.canvas.addEventListener("pointermove", (e) => {
+    const ev = e as PointerEvent;
+    input.pointerScreenPos[0] = ev.offsetX;
+    input.pointerScreenPos[1] = vp.screen[1] - ev.offsetY;
+    input.pointerWorldPos = vp.screenToWorld(input.pointerScreenPos);
+  });
 
   input.initialized = true;
 }
@@ -66,8 +65,8 @@ export class Input {
   keyReleasesPrev: Set<string> = new Set();
   keyPressesNext: Set<string> = new Set();
   keyReleasesNext: Set<string> = new Set();
-  pointerScreenPos: Vector = new Vector();
-  pointerWorldPos: Vector = new Vector();
+  pointerScreenPos: vec2 = [0, 0];
+  pointerWorldPos: vec2 = [0, 0];
 
   isKeyDown(key: string): boolean {
     return this.downKeys.has(key);
@@ -79,12 +78,6 @@ export class Input {
 
   wasKeyReleased(key: string): boolean {
     return this.keyReleasesPrev.has(key);
-  }
-
-  syncPointerWorldPos() {
-    //TODO use viewport to get cursor world pos
-    // this.pointerWorldPos.x = this.pointerScreenPos.x - g.origin.x;
-    // this.pointerWorldPos.y = this.pointerScreenPos.y - g.origin.y;
   }
 }
 

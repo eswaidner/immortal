@@ -28,6 +28,7 @@ async function init() {
 }
 
 export class Viewport {
+  resolution: vec2 = [0, 0];
   screen: vec2 = [0, 0];
   transform: Transform = new Transform();
   zoom: number = 1;
@@ -39,22 +40,33 @@ export class Viewport {
 
   updateScale() {
     this.transform.scale = [
-      this.zoom * this.screen[0],
-      this.zoom * this.screen[1],
+      this.zoom * this.resolution[0],
+      this.zoom * this.resolution[1],
     ];
   }
 
   screenToWorld(screenPos: vec2): vec2 {
+    // normalize coordinates
+    const spos = vec2.clone(screenPos);
+    spos[0] /= this.screen[0];
+    spos[1] /= this.screen[1];
+
     const worldPos = vec2.create();
     const trs = this.transform.trs();
-    return vec2.transformMat2d(worldPos, screenPos, trs);
+    return vec2.transformMat2d(worldPos, spos, trs);
   }
 
   worldToScreen(worldPos: vec2): vec2 {
     const screenPos = vec2.create();
     const trs = this.transform.trs();
     mat2d.invert(trs, trs);
-    return vec2.transformMat2d(screenPos, worldPos, trs);
+    vec2.transformMat2d(screenPos, worldPos, trs);
+
+    // scale coordinates
+    screenPos[0] *= this.screen[0];
+    screenPos[1] *= this.screen[1];
+
+    return screenPos;
   }
 }
 
@@ -418,8 +430,10 @@ function onResize(entries: ResizeObserverEntry[]) {
     const displayWidth = Math.round(size.inlineSize);
     const displayHeight = Math.round(size.blockSize);
 
-    vp.screen[0] = displayWidth;
-    vp.screen[1] = displayHeight;
+    vp.resolution[0] = displayWidth;
+    vp.resolution[1] = displayHeight;
+    vp.screen[0] = displayWidth / window.devicePixelRatio;
+    vp.screen[1] = displayHeight / window.devicePixelRatio;
     vp.updateScale();
 
     const needResize =
