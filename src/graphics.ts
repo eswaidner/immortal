@@ -103,8 +103,15 @@ function draw() {
   const t = Zen.getResource<Zen.Time>(Zen.Time);
   if (!t) return;
 
+  // sort draw groups by zIndex, smallest zIndex renders first
+  const groups: DrawGroup[] = [];
   for (let i = 0; i < q.length; i++) {
-    const group = q[i].getAttribute<DrawGroup>(DrawGroup)!;
+    groups.push(q[i].getAttribute<DrawGroup>(DrawGroup)!);
+  }
+  groups.sort((a, b) => a.zIndex - b.zIndex);
+
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i];
 
     vp.gl.useProgram(group.shader.program);
     vp.gl.bindVertexArray(group.vao);
@@ -126,7 +133,6 @@ function draw() {
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.modelBuffer);
     vp.gl.bufferData(vp.gl.ARRAY_BUFFER, rectVerts, vp.gl.STATIC_DRAW);
 
-    //TODO get data from property value array
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.instanceBuffer.buffer);
     vp.gl.bufferData(
       vp.gl.ARRAY_BUFFER,
@@ -317,6 +323,7 @@ export class DrawGroup {
   instanceBuffer: BufferFormat;
   textureValues: Record<string, Texture> = {};
   instanceCount: number = 0;
+  zIndex: number = 0;
   propertyValues: number[] = [];
 
   constructor(shader: Shader) {

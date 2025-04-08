@@ -2,7 +2,7 @@ import { Input } from "./input";
 import { FaceVelocity, Movement } from "./movement";
 import { Transform } from "./transforms";
 import * as Zen from "./zen";
-import { Draw, DrawGroup, Shader, Viewport } from "./graphics";
+import { Draw, DrawGroup, Shader } from "./graphics";
 import { SmoothFollow } from "./camera";
 import { vec2 } from "gl-matrix";
 

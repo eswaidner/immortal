@@ -18,12 +18,9 @@ function input() {
   Zen.createSystem(
     { with: [Camera, Transform], resources: [Viewport] },
     {
-      foreach: (e, ctx) => {
+      foreach: (e) => {
         const vp = Zen.getResource<Viewport>(Viewport)!;
         const trs = e.getAttribute<Transform>(Transform)!;
-
-        // trs.pos[0] -= 0.5 * ctx.deltaTime;
-        // vp.zoom -= 0.001 * ctx.deltaTime;
 
         vp.transform.pos = vec2.clone(trs.pos);
         vp.transform.rot = trs.rot;
