@@ -72,7 +72,7 @@ export function createSystem(
   return e;
 }
 
-export function createResource<T>(key: object, value: T) {
+export function createResource<T>(key: object, value: T): T {
   if (resources.has(key)) {
     console.log(
       `WARNING: resource of type '${key}' already exists, overwriting`,
@@ -80,6 +80,7 @@ export function createResource<T>(key: object, value: T) {
   }
 
   resources.set(key, value as object);
+  return value;
 }
 
 export function deleteResource(key: object) {
@@ -249,7 +250,7 @@ export class System {
     const q = query(this.query);
     const len = q.length;
 
-    const ctx = { deltaTime: this.elapsedInterval };
+    const ctx = { entities: q, deltaTime: this.elapsedInterval };
 
     if (this.foreach) {
       for (let i = 0; i < len; i++) {
@@ -264,6 +265,7 @@ export class System {
 }
 
 export interface SystemContext {
+  entities: Entity[];
   deltaTime: number;
 }
 

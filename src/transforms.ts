@@ -1,51 +1,50 @@
-import { Matrix } from "pixi.js";
-import { Vector } from "./math";
+import { mat2d, vec2 } from "gl-matrix";
 import * as Zen from "./zen";
 
 function init() {
   Zen.defineAttribute(Transform);
 }
 
-//TODO coordinate system utilities
 //TODO parent/child relationships
 
 export class Transform {
-  pos: Vector;
+  pos: vec2;
   rot: number;
-  scale: Vector;
-  pivot: Vector;
-  skew: Vector;
-
-  private mat: Matrix = new Matrix();
+  scale: vec2;
+  pivot: vec2;
 
   constructor(properties?: {
-    pos?: Vector;
+    pos?: vec2;
     rot?: number;
-    scale?: Vector;
-    pivot?: Vector;
-    skew?: Vector;
+    scale?: vec2;
+    pivot?: vec2;
   }) {
-    this.pos = properties?.pos || new Vector();
+    this.pos = properties?.pos || [0, 0];
     this.rot = properties?.rot || 0;
-    this.scale = properties?.scale || new Vector(1, 1);
-    this.pivot = properties?.pivot || new Vector(0.5, 0.5);
-    this.skew = properties?.skew || new Vector();
+    this.scale = properties?.scale || [1, 1];
+    this.pivot = properties?.pivot || [0, 0];
   }
 
-  trs(): Matrix {
-    this.mat.setTransform(
-      this.pos.x,
-      this.pos.y,
-      this.pivot.x,
-      this.pivot.y,
-      this.scale.x,
-      this.scale.y,
-      this.rot,
-      this.skew.x,
-      this.skew.y,
-    );
+  trs(): mat2d {
+    const offset = vec2.create();
+    vec2.add(offset, this.pos, this.pivot);
 
-    return this.mat;
+    const p = mat2d.create();
+    mat2d.translate(p, p, offset);
+
+    const m = mat2d.create();
+    mat2d.mul(m, m, p);
+    mat2d.scale(m, m, this.scale);
+    mat2d.rotate(m, m, this.rot);
+    mat2d.translate(m, m, this.pos);
+    mat2d.mul(m, m, mat2d.invert(p, p));
+
+    return m;
+  }
+
+  trsi(): mat2d {
+    const trs = this.trs();
+    return mat2d.invert(trs, trs);
   }
 }
 

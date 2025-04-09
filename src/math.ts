@@ -117,6 +117,129 @@ export class Vector {
   }
 }
 
+export class Matrix {
+  m00: number = 1;
+  m01: number = 0;
+  m10: number = 0;
+  m11: number = 1;
+  tx: number = 0;
+  ty: number = 0;
+
+  constructor(
+    m00: number = 1,
+    m01: number = 0,
+    m10: number = 0,
+    m11: number = 1,
+    tx: number = 0,
+    ty: number = 0,
+  ) {
+    this.m00 = m00;
+    this.m01 = m01;
+    this.m10 = m10;
+    this.m11 = m11;
+    this.tx = tx;
+    this.ty = ty;
+  }
+
+  static identity(): Matrix {
+    return new Matrix(1, 0, 0, 1, 0, 0);
+  }
+
+  static trs(pos: Vector, rot: number, scale: Vector): Matrix {
+    return Matrix.scaling(scale)
+      .mul(Matrix.rotation(rot))
+      .mul(Matrix.translation(pos));
+  }
+
+  static trsp(pos: Vector, rot: number, scale: Vector, pivot: Vector): Matrix {
+    return Matrix.translation(pivot)
+      .mul(Matrix.scaling(scale))
+      .mul(Matrix.rotation(rot))
+      .mul(Matrix.translation(pos))
+      .mul(Matrix.translation(pivot).invert());
+  }
+
+  static translation(v: Vector): Matrix {
+    const m = Matrix.identity();
+    m.tx = v.x;
+    m.ty = v.y;
+    return m;
+  }
+
+  static rotation(radians: number): Matrix {
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+
+    const m = Matrix.identity();
+    m.m00 = cos;
+    m.m01 = -sin;
+    m.m10 = sin;
+    m.m11 = cos;
+
+    return m;
+  }
+
+  static scaling(v: Vector): Matrix {
+    const m = Matrix.identity();
+    m.m00 = v.x;
+    m.m11 = v.y;
+
+    return m;
+  }
+
+  mul(other: Matrix): Matrix {
+    const a = this;
+    const b = other;
+    return new Matrix(
+      a.m00 * b.m00 + a.m01 * b.m10,
+      a.m00 * b.m01 + a.m01 * b.m11,
+      a.m10 * b.m00 + a.m11 * b.m10,
+      a.m10 * b.m01 + a.m11 * b.m11,
+      a.tx * b.m00 + a.ty * b.m10 + b.tx,
+      a.tx * b.m01 + a.ty * b.m11 + b.ty,
+    );
+  }
+
+  mulv(vec: Vector): Vector {
+    const x = this.m00 * vec.x + this.m01 * vec.y + this.tx;
+    const y = this.m10 * vec.x + this.m11 * vec.y + this.ty;
+    return new Vector(x, y);
+  }
+
+  transpose(): Matrix {
+    return new Matrix(this.m00, this.m10, this.m01, this.m11, this.tx, this.ty);
+  }
+
+  invert(): Matrix {
+    const det = this.determinant();
+    if (det === 0) throw new Error("matrix cannot be inverted");
+
+    const invDet = 1 / det;
+    return new Matrix(
+      invDet * this.m11,
+      -invDet * this.m01,
+      -invDet * this.m10,
+      invDet * this.m00,
+      -invDet * (this.ty * this.m10 - this.tx * this.m11),
+      -invDet * (this.tx * this.m01 - this.ty * this.m00),
+    );
+  }
+
+  determinant(): number {
+    return this.m00 * this.m11 - this.m01 * this.m10;
+  }
+
+  toString(): string {
+    return `[${this.m00}, ${this.m01}, 0]
+            [${this.m10}, ${this.m11}, 0]
+            [${this.tx}, ${this.ty}, 1]`;
+  }
+
+  toArray(): number[] {
+    return [this.m00, this.m01, 0, this.m10, this.m11, 0, this.tx, this.ty, 1];
+  }
+}
+
 const degToRadFactor = Math.PI / 180;
 export function degToRad(degrees: number): number {
   return degrees * degToRadFactor;

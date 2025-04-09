@@ -1,18 +1,18 @@
-import { Vector } from "./math";
-import { WorldOrigin } from "./pixi";
+import { vec2 } from "gl-matrix";
+import { Viewport } from "./graphics";
 import * as Zen from "./zen";
 
 function init() {
   Zen.createResource<Input>(Input, new Input());
 
-  Zen.createSystem({ resources: [Input, WorldOrigin] }, { once: updateInput });
+  Zen.createSystem({ resources: [Input, Viewport] }, { once: updateInput });
 }
 
 function updateInput() {
   const input = Zen.getResource<Input>(Input)!;
-  const origin = Zen.getResource<WorldOrigin>(WorldOrigin)!;
+  const vp = Zen.getResource<Viewport>(Viewport)!;
 
-  if (!input.initialized) initInput(input, origin);
+  if (!input.initialized) initInput(input, vp);
 
   //guarantee each key state gets a full frame to be processed before removal
   input.keyPressesPrev.clear();
@@ -25,7 +25,7 @@ function updateInput() {
   input.keyReleasesNext = krp;
 }
 
-function initInput(input: Input, origin: WorldOrigin) {
+function initInput(input: Input, vp: Viewport) {
   window.onkeydown = (e) => {
     const k = e.key.toLowerCase();
 
@@ -48,12 +48,11 @@ function initInput(input: Input, origin: WorldOrigin) {
     if (document.visibilityState === "hidden") input.downKeys.clear();
   });
 
-  origin.container.eventMode = "dynamic";
-  origin.container.on("globalpointermove", (e) => {
-    input.pointerScreenPos.x = e.global.x;
-    input.pointerScreenPos.y = e.global.y;
-
-    input.syncPointerWorldPos();
+  vp.gl.canvas.addEventListener("pointermove", (e) => {
+    const ev = e as PointerEvent;
+    input.pointerScreenPos[0] = ev.offsetX;
+    input.pointerScreenPos[1] = vp.screen[1] - ev.offsetY;
+    input.pointerWorldPos = vp.screenToWorld(input.pointerScreenPos);
   });
 
   input.initialized = true;
@@ -66,8 +65,8 @@ export class Input {
   keyReleasesPrev: Set<string> = new Set();
   keyPressesNext: Set<string> = new Set();
   keyReleasesNext: Set<string> = new Set();
-  pointerScreenPos: Vector = new Vector();
-  pointerWorldPos: Vector = new Vector();
+  pointerScreenPos: vec2 = [0, 0];
+  pointerWorldPos: vec2 = [0, 0];
 
   isKeyDown(key: string): boolean {
     return this.downKeys.has(key);
@@ -79,12 +78,6 @@ export class Input {
 
   wasKeyReleased(key: string): boolean {
     return this.keyReleasesPrev.has(key);
-  }
-
-  syncPointerWorldPos() {
-    //TODO use viewport to get cursor world pos
-    // this.pointerWorldPos.x = this.pointerScreenPos.x - g.origin.x;
-    // this.pointerWorldPos.y = this.pointerScreenPos.y - g.origin.y;
   }
 }
 
