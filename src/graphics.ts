@@ -110,6 +110,7 @@ function draw() {
   }
   groups.sort((a, b) => a.zIndex - b.zIndex);
 
+  // prepare and dispatch an instanced draw call for each draw group
   for (let i = 0; i < groups.length; i++) {
     const group = groups[i];
 
@@ -129,6 +130,21 @@ function draw() {
       "WORLD_TO_SCREEN",
       mat3.fromMat2d(mat3.create(), vpTRSI),
     );
+
+    // update uniform values
+    for (const u of Object.values(group.uniformValues)) {
+      switch (u.value.type) {
+        case "float":
+          vp.gl.uniform1f(u.uniform.location, u.value.value);
+          break;
+        case "vec2":
+          vp.gl.uniform2fv(u.uniform.location, u.value.value);
+          break;
+        case "mat3":
+          vp.gl.uniformMatrix3fv(u.uniform.location, false, u.value.value);
+          break;
+      }
+    }
 
     vp.gl.bindBuffer(vp.gl.ARRAY_BUFFER, group.modelBuffer);
     vp.gl.bufferData(vp.gl.ARRAY_BUFFER, rectVerts, vp.gl.STATIC_DRAW);
@@ -324,6 +340,7 @@ export class DrawGroup {
   textureValues: Record<string, Texture> = {};
   instanceCount: number = 0;
   zIndex: number = 0;
+  uniformValues: Record<string, UniformValue> = {};
   propertyValues: number[] = [];
 
   constructor(shader: Shader) {
@@ -365,23 +382,18 @@ export class DrawGroup {
       return this;
     }
 
-    switch (value.type) {
-      case "float":
-        this.gl.uniform1f(u.location, value.value);
-        break;
-      case "vec2":
-        this.gl.uniform2fv(u.location, value.value);
-        break;
-      case "mat3":
-        this.gl.uniformMatrix3fv(u.location, false, value.value);
-        break;
-    }
+    this.uniformValues[name] = { uniform: u, value };
   }
 
   setTexture(name: string, value: Texture): DrawGroup {
     //TODO
     return this;
   }
+}
+
+interface UniformValue {
+  uniform: Uniform;
+  value: GLValue;
 }
 
 export class BufferFormat {
