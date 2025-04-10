@@ -34,8 +34,14 @@ export class Viewport {
   zoom: number = 1;
   gl: WebGL2RenderingContext;
 
+  private renderTextures: Map<string, RenderTexture>;
+  //TODO depth and stencil render buffers
+
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl;
+
+    this.renderTextures = new Map();
+    this.renderTextures.set("COLOR", new RenderTexture(gl, "rgba8", 1, true));
   }
 
   updateScale() {
@@ -43,6 +49,28 @@ export class Viewport {
       this.zoom * this.resolution[0],
       this.zoom * this.resolution[1],
     ];
+  }
+
+  createRenderTexture(
+    name: string,
+    format: TextureFormat,
+    resolution: number,
+    swappable: boolean,
+  ): RenderTexture {
+    const rt = this.renderTextures.get(name);
+
+    if (
+      rt &&
+      rt.format === format &&
+      rt.resolution === resolution &&
+      rt.isSwappable() === swappable
+    ) {
+      return rt;
+    }
+
+    const newRt = new RenderTexture(this.gl, format, resolution, swappable);
+    this.renderTextures.set(name, newRt);
+    return newRt;
   }
 
   screenToWorld(screenPos: vec2): vec2 {
@@ -103,14 +131,15 @@ function draw() {
   const t = Zen.getResource<Zen.Time>(Zen.Time);
   if (!t) return;
 
-  // sort draw groups by zIndex, smallest zIndex renders first
+  // sort draw groups by drawOrder, smallest drawOrder renders first
   const groups: DrawGroup[] = [];
   for (let i = 0; i < q.length; i++) {
     groups.push(q[i].getAttribute<DrawGroup>(DrawGroup)!);
   }
-  groups.sort((a, b) => a.zIndex - b.zIndex);
+  groups.sort((a, b) => a.drawOrder - b.drawOrder);
 
   // prepare and dispatch an instanced draw call for each draw group
+  // TODO replace with group.draw()
   for (let i = 0; i < groups.length; i++) {
     const group = groups[i];
 
@@ -170,27 +199,27 @@ export class Shader {
   program: WebGLProgram;
   mode: ShaderMode;
   uniforms: Uniform[] = [];
-  textures: Record<string, Texture> = {};
   properties: Property[] = [];
+  outputs: Output[] = [];
 
   constructor(
     source: string,
     mode: ShaderMode,
     options?: {
       properties?: Record<string, GLType>;
-      uniforms?: Record<string, GLType>;
-      textures?: Record<string, Texture>; //TODO sampler settings
+      uniforms?: Record<string, GLType | GLSamplerType>;
+      outputs?: Record<string, GLOutputType>;
     },
   ) {
     const gl = Zen.getResource<Viewport>(Viewport)?.gl;
     if (!gl) throw new Error("failed to get renderer");
 
     this.mode = mode;
-    this.textures = options?.textures || {};
 
     // add uniforms
     this.uniforms.push({ name: "WORLD_TO_SCREEN", type: "mat3", location: 0 });
     this.uniforms.push({ name: "SCREEN_TO_WORLD", type: "mat3", location: 0 });
+    //TODO TIME, DELTA_TIME, SCREEN_COLOR
     for (const [name, type] of Object.entries(options?.uniforms || {})) {
       this.uniforms.push({ name, type, location: 0 });
     }
@@ -199,6 +228,12 @@ export class Shader {
     this.properties.push({ name: "TRANSFORM", type: "mat3", location: 0 });
     for (const [name, type] of Object.entries(options?.properties || {})) {
       this.properties.push({ name, type, location: 0 });
+    }
+
+    // add outputs
+    this.outputs.push({ name: "COLOR", type: "vec4", location: 0 });
+    for (const [name, type] of Object.entries(options?.outputs || {})) {
+      this.outputs.push({ name, type, location: 0 });
     }
 
     const vertSrc = vertSource(this);
@@ -224,11 +259,14 @@ export class Shader {
       u.location = gl.getUniformLocation(program, u.name)!;
     }
 
-    //TODO get texture sampler locations
-
     // get property locations
     for (const p of this.properties) {
       p.location = gl.getAttribLocation(program, p.name)!;
+    }
+
+    // get output locations
+    for (const o of this.properties) {
+      o.location = gl.getFragDataLocation(program, o.name)!;
     }
 
     this.program = program;
@@ -254,6 +292,12 @@ function compileShader(
 
 type GLType = "float" | "vec2" | "mat3";
 type GLValue = FloatValue | Vec2Value | Mat3Value;
+type GLSamplerType = "sampler2D" | "sampler2DArray";
+type GLOutputType = "float" | "vec4"; //TODO support more types
+type TextureFormat = "rgba8"; //TODO support more formats
+
+// prettier-ignore
+type TextureSize = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
 
 interface FloatValue {
   type: "float";
@@ -276,16 +320,94 @@ interface Property {
   location: number;
 }
 
+interface Output {
+  name: string;
+  type: GLOutputType;
+  location: number;
+}
+
 interface Uniform {
   name: string;
-  type: GLType;
+  type: GLType | GLSamplerType;
   location: WebGLUniformLocation;
 }
 
-interface Texture {
-  name: string;
-  tex: WebGLTexture;
-  //TODO sampler settings
+type Texture = TextureArray | RenderTexture;
+type TextureSource = HTMLImageElement | Uint8ClampedArray;
+
+class TextureArray {
+  size: TextureSize;
+  layers: number;
+  unit: number | null = null;
+  //TODO mipmap settings
+
+  private data: Uint8ClampedArray;
+  private texture: WebGLTexture;
+
+  constructor(size: TextureSize, layers: number, sources: TextureSource[]) {
+    const vp = Zen.getResource<Viewport>(Viewport);
+    if (!vp) throw new Error("viewport undefined");
+
+    const tex = vp.gl.createTexture();
+    vp.gl.bindTexture(vp.gl.TEXTURE_2D_ARRAY, tex);
+    //TODO upload texture array data from source (treat as atlas)
+    vp.gl.bindTexture(vp.gl.TEXTURE_2D_ARRAY, null);
+
+    this.size = size;
+    this.layers = layers;
+    this.data = new Uint8ClampedArray();
+    this.texture = tex;
+  }
+
+  //TODO
+  // get(x, y, depth): vec4
+  // set(x, y, depth, vec4)
+}
+
+class RenderTexture {
+  format: TextureFormat;
+  resolution: number;
+  unit: number | null = null;
+  //TODO mipmap settings
+
+  private texture: WebGLTexture;
+  private altTexture: WebGLTexture | null;
+
+  constructor(
+    gl: WebGL2RenderingContext,
+    format: TextureFormat,
+    resolution: number,
+    swappable: boolean,
+  ) {
+    this.format = format;
+    this.resolution = resolution;
+    this.texture = gl.createTexture();
+    this.altTexture = swappable ? gl.createTexture() : null;
+  }
+
+  isSwappable(): boolean {
+    return this.altTexture !== null;
+  }
+
+  borrow(mutable: boolean): TextureRef {
+    //TODO borrow check behavior
+    //TODO allow 1 write access and N read accesses
+    //TODO reference counting
+    return { texture: this.texture, mutable };
+  }
+
+  return(ref: TextureRef) {
+    //TODO if swappable, automate swap behavior on mutable return
+  }
+
+  //TODO
+  // get(x, y): vec4
+  // set(x, y, vec4)
+}
+
+interface TextureRef {
+  texture: WebGLTexture;
+  mutable: boolean;
 }
 
 function getPropertySize(p: Property): number {
@@ -337,11 +459,18 @@ export class DrawGroup {
   vao: WebGLVertexArrayObject;
   modelBuffer: WebGLBuffer;
   instanceBuffer: BufferFormat;
-  textureValues: Record<string, Texture> = {};
   instanceCount: number = 0;
-  zIndex: number = 0;
+  drawOrder: number = 0;
   uniformValues: Record<string, UniformValue> = {};
+  samplerSettings: Record<string, SamplerSettings> = {};
   propertyValues: number[] = [];
+
+  private framebuffer: WebGLFramebuffer;
+  private textureArrays: Record<string, TextureArray> = {};
+  private pipelineInputs: RenderTexture[] = [];
+  private pipelineOutputs: RenderTexture[] = [];
+  private depthBuffer: WebGLRenderbuffer | null = null;
+  private stencilBuffer: WebGLRenderbuffer | null = null;
 
   constructor(shader: Shader) {
     const gl = Zen.getResource<Viewport>(Viewport)?.gl;
@@ -353,11 +482,17 @@ export class DrawGroup {
     const instanceBuffer = new BufferFormat(gl, shader);
     gl.bindVertexArray(null);
 
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    //TODO configure framebuffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
     this.gl = gl;
     this.shader = shader;
     this.vao = vao;
     this.modelBuffer = modelBuffer;
     this.instanceBuffer = instanceBuffer;
+    this.framebuffer = fb;
   }
 
   setNumberUniform(name: string, value: number): DrawGroup {
@@ -385,15 +520,47 @@ export class DrawGroup {
     this.uniformValues[name] = { uniform: u, value };
   }
 
-  setTexture(name: string, value: Texture): DrawGroup {
-    //TODO
+  setTexture(name: string, value: TextureArray): DrawGroup {
+    const u = this.shader.uniforms.find((u) => u.name === name);
+    if (!u || (u.type !== "sampler2D" && u.type !== "sampler2DArray")) {
+      console.log(`WARNING: texture array missing sampler '${name}'`);
+      return this;
+    }
+
+    this.textureArrays[name] = value;
+
     return this;
+  }
+
+  draw() {
+    //TODO bind objects (program, vao, framebuffer)
+    //TODO borrow RenderTexture references
+    //TODO bind textures to texture units
+    //TODO update sampler uniform values
+    //TODO upload sampler parameters
+    //TODO update builtin uniform values
+    //TODO upload uniform values
+    //TODO upload model/instance buffer data
+    //TODO dispatch instanced draw call
+    //TODO return RenderTexture references
+    //TODO unbind objects
+    //TODO clear instanceCount and propertyValues state
   }
 }
 
 interface UniformValue {
   uniform: Uniform;
   value: GLValue;
+}
+
+type FilterMode = "nearest" | "linear";
+
+interface SamplerSettings {
+  sampler: Uniform;
+  wrapMode: "clamp" | "repeat";
+  minFilterMode: FilterMode;
+  magFilterMode: FilterMode;
+  mipmapMode: FilterMode;
 }
 
 export class BufferFormat {
